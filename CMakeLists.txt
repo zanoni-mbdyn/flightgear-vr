@@ -218,14 +218,15 @@ option(ENABLE_METAR      "Set to ON to build the metar application (default)" ON
 option(ENABLE_TESTS      "Set to ON to build test applications (default)" ON)
 option(ENABLE_FGCOM      "Set to ON to build the FGCom application (default)" ON)
 option(ENABLE_FLITE      "Set to ON to build the Flite text-to-speech module" ON)
-option(ENABLE_QT         "Set to ON to build the internal Qt launcher" ON)
+option(ENABLE_QT         "Set to ON to build the internal Qt launcher" OFF)
 option(ENABLE_TRAFFIC    "Set to ON to build the external traffic generator modules" ON)
 option(ENABLE_FGQCANVAS  "Set to ON to build the Qt-based remote canvas application" OFF)
 option(ENABLE_DEMCONVERT "Set to ON to build the dem conversion tool (default)" ON)
 option(ENABLE_HID_INPUT  "Set to ON to build HID-based input code" OFF)
 option(ENABLE_PLIB_JOYSTICK  "Set to ON to enable legacy joystick code (default)" ON)
 
-
+# VR
+option(ENABLE_VR	"Set to ON to build with OpenVR support" ON)
 
 # Test-suite options.
 option(ENABLE_AUTOTESTING "Set to ON to execute the test suite after building the test_suite target (default)" ON)
@@ -360,6 +361,23 @@ else()
     message(STATUS "Qt support disabled")
     set(ENABLE_FGQCANVAS OFF)
 endif (ENABLE_QT)
+##############################################################################
+
+##############################################################################
+## OpenVR setup
+if (ENABLE_VR)
+	message(STATUS "VR support requested, checking for OpenVR availability")
+	find_package(OpenVR REQUIRED)
+	if (OpenVRSDK_FOUND)
+		message(STATUS "OpenVR found, VR support will be enabled")
+		include_directories(BEFORE
+			${OPENVR_SDK_INCLUDE_DIRS}
+		)
+		set(HAVE_OPENVR 1)
+	else()
+		message(STATUS "Could not find OpenVR, VR support will be disabled")
+	endif()
+endif (ENABLE_VR)
 ##############################################################################
 
 find_package(PLIB REQUIRED puaux pu fnt)

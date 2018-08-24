@@ -42,6 +42,10 @@ function(setup_fgfs_libraries target)
         target_link_libraries(${target} ${X11_LIBRARIES})
     endif()
 
+    if(OPENVRSDK_FOUND)
+	    target_link_libraries(${target} ${OPENVR_SDK_LIBRARIES})
+    endif()
+
     target_link_libraries(${target}
         SimGearCore
         SimGearScene

@@ -29,6 +29,7 @@ foreach( mylibfolder
 		Time
 		Traffic
 		FDM
+		VR
 		Viewer
 		Main
 	)
@@ -36,4 +37,8 @@ foreach( mylibfolder
 	add_subdirectory(${mylibfolder})
 
 endforeach( mylibfolder )
+
+# if(HAVE_OPENVR)
+#	add_subdirectory(VR)
+# endif(HAVE_OPENVR)
 
