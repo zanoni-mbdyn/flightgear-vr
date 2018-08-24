@@ -1371,6 +1371,7 @@ void CameraGroup::buildDefaultGroup(osgViewer::Viewer* viewer)
             setValue(masterCamera->getNode("window/name", true),
                      windowBuilder->getDefaultWindowName());
         }
+
         SGPropertyNode* nameNode = masterCamera->getNode("window/name");
         if (nameNode)
             setValue(cgroupNode->getNode("gui/window/name", true),

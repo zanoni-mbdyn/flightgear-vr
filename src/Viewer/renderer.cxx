@@ -119,6 +119,11 @@
 #include <Viewer/PUICamera.hxx>
 #endif
 
+#if defined(HAVE_OPENVR)
+#include <VR/openvrdevice.hxx>
+#include <VR/openvrnode.hxx>
+#endif
+
 using namespace osg;
 using namespace simgear;
 using namespace flightgear;
@@ -356,6 +361,9 @@ FGRenderer::FGRenderer() :
     _fogDensity( new osg::Uniform( "fg_FogDensity", 0.0001f ) ),
     _shadowNumber( new osg::Uniform( "fg_ShadowNumber", (int)4 ) ),
     _shadowDistances( new osg::Uniform( "fg_ShadowDistances", osg::Vec4f(5.0, 50.0, 500.0, 5000.0 ) ) ),
+#ifdef HAVE_OPENVR
+    _useVR(false),
+#endif // HAVE_OPENVR
     _depthInColor( new osg::Uniform( "fg_DepthInColor", false ) )
 {
     // it's not the real root, whatever that means
@@ -378,6 +386,17 @@ FGRenderer::FGRenderer() :
 
 FGRenderer::~FGRenderer()
 {
+#ifdef HAVE_OPENVR
+    if (_useVR) {
+	    osgViewer::ViewerBase::Contexts gcs;
+	    getViewer()->getContexts(gcs);
+	    osgViewer::ViewerBase::Contexts::iterator it;
+	    for(it = gcs.begin(); it != gcs.end(); it++)
+	    {
+	    	_openvrDevice->shutdown(*it);
+	    }
+    }
+#endif //HAVE_OPENVR
     SGPropertyChangeListenerVec::iterator i = _listeners.begin();
     for (; i != _listeners.end(); ++i) {
         delete *i;
@@ -403,6 +422,38 @@ FGRenderer::preinit( void )
     _viewerSceneRoot = new osg::Group;
     _viewerSceneRoot->setName("viewerSceneRoot");
     viewer->setSceneData(_viewerSceneRoot);
+
+#ifdef HAVE_OPENVR
+    if (!OpenVRDevice::hmdPresent())
+    {
+	    SG_LOG(SG_GENERAL, SG_WARN, "VR enabled during compilation but no HMD device was found.\n"
+	    "VR support will be disabled.\n"
+	    );
+    } 
+    else
+    {
+	    SG_LOG(SG_GENERAL, SG_INFO, "VR enabled during compilation: found HMD device\n");
+	    
+	    // Open the HMD
+	    SG_LOG(SG_GENERAL, SG_INFO, "Initializing HMD device\n");
+	    float nearClip = 0.01f;
+	    float farClip = 10000.0f;
+	    float worldUnitsPerMetre = 1.0f;
+	    int samples = 4;
+	    
+	    _openvrDevice = new OpenVRDevice(nearClip, farClip, worldUnitsPerMetre, samples);
+	    if (!_openvrDevice->hmdInitialized())
+	    {
+	    	SG_LOG(SG_GENERAL, SG_WARN, "Unable to initialize HMD device.\n"
+	    	"VR support will be disabled.\n"
+	    	);
+	    } 
+	    else 
+	    {
+		_useVR = true;
+	    }
+    }
+#endif // HAVE_OPENVR
 
     _quickDrawable = nullptr;
     _splash = new SplashScreen;
@@ -1429,8 +1480,7 @@ FGRenderer::setupView( void )
     
     viewer->getCamera()
         ->setComputeNearFarMode(osg::CullSettings::DO_NOT_COMPUTE_NEAR_FAR);
-    
-  
+     
     // need to update the light on every frame
     // OSG LightSource objects are rather confusing. OSG only supports
     // the 10 lights specified by OpenGL itself; if more than one

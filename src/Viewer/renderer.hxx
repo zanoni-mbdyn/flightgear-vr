@@ -12,6 +12,10 @@
 
 #include "renderingpipeline.hxx"
 
+#if defined(HAVE_OPENVR)
+#include <VR/openvrdevice.hxx>
+#endif
+
 namespace osg
 {
 class Camera;
@@ -53,7 +57,7 @@ class FGRenderer {
 
 public:
 
-    FGRenderer();
+FGRenderer();
     ~FGRenderer();
 
     void preinit();
@@ -151,6 +155,11 @@ protected:
     size_t _numCascades;
     float _cascadeFar[4];
     bool _useColorForDepth;
+
+#ifdef HAVE_OPENVR
+    bool _useVR;
+    osg::ref_ptr<OpenVRDevice> _openvrDevice;
+#endif // HAVE_OPENVR
 
     typedef std::vector<SGPropertyChangeListener*> SGPropertyChangeListenerVec;
     SGPropertyChangeListenerVec _listeners;
