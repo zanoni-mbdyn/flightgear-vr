@@ -62,6 +62,8 @@
 #cmakedefine HAVE_FTIME
 #cmakedefine HAVE_GETTIMEOFDAY
 
+#cmakedefine HAVE_OPENVR
+
 #define FG_BUILD_TYPE "@FG_BUILD_TYPE@"
 
 #define HAVE_PUI
