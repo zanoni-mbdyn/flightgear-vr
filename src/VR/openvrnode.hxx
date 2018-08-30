@@ -41,7 +41,7 @@ namespace osgViewer
 class OpenVRNode : public osg::Group
 {
 public:
-	OpenVRNode(osgViewer::View* view, osg::ref_ptr<OpenVRDevice> dev, osg::ref_ptr<OpenVRRealizeOperation> realizeOperation) : osg::Group(),
+	OpenVRNode(osg::View* view, osg::ref_ptr<OpenVRDevice> dev, osg::ref_ptr<OpenVRRealizeOperation> realizeOperation) : osg::Group(),
 		m_configured(false),
 		m_view(view),
 		m_cameraRTTLeft(nullptr), m_cameraRTTRight(nullptr),
@@ -49,13 +49,14 @@ public:
 		m_realizeOperation(realizeOperation)
 	{};
 	virtual void traverse(osg::NodeVisitor& nv);
+	void setConfigured(bool isConfigured) {m_configured = isConfigured;};
 protected:
 	~OpenVRNode() {};
-	virtual void configure();
+	// virtual void configure();
 
 	bool m_configured;
 
-	osg::observer_ptr<osgViewer::View> m_view;
+	osg::observer_ptr<osg::View> m_view;
 	osg::observer_ptr<osg::Camera> m_cameraRTTLeft, m_cameraRTTRight;
 	osg::observer_ptr<OpenVRDevice> m_device;
 	osg::observer_ptr<OpenVRRealizeOperation> m_realizeOperation;

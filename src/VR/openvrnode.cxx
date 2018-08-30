@@ -32,14 +32,15 @@
 void OpenVRNode::traverse(osg::NodeVisitor& nv)
 {
 	// Must be realized before any traversal
-	if (!m_configured && m_realizeOperation->realized())
-	{
-		configure();
-	}
+	// if (!m_configured && m_realizeOperation->realized())
+	// {
+	//	configure();
+	// }
 
 	osg::Group::traverse(nv);
 }
 
+#if 0
 /* Protected functions */
 void OpenVRNode::configure()
 {
@@ -82,3 +83,4 @@ void OpenVRNode::configure()
 
 	m_configured = true;
 }
+#endif
