@@ -23,6 +23,10 @@
 
 #include <string>
 
+#if defined (HAVE_OPENVR)
+#include <VR/openvrdevice.hxx>
+#endif
+
 class SGPropertyNode;
 
 namespace flightgear
@@ -40,6 +44,9 @@ public:
      * @param stencil whether windows should allocate stencil planes
      */
     static void initWindowBuilder(bool stencil);
+#if defined (HAVE_OPENVR)
+    static void initWindowBuilder(bool stencil, osg::ref_ptr<OpenVRDevice> openvrDevice);
+#endif
     /** Get the singleton window builder
      */
     static WindowBuilder* getWindowBuilder() { return windowBuilder.get(); }
@@ -61,13 +68,16 @@ public:
     static void setPoseAsStandaloneApp(bool b);
 protected:
     WindowBuilder(bool stencil);
-    
     void setFullscreenTraits(const SGPropertyNode* winNode, osg::GraphicsContext::Traits* traits);
     bool setWindowedTraits(const SGPropertyNode* winNode, osg::GraphicsContext::Traits* traits);
     
     void setMacPoseAsStandaloneApp(osg::GraphicsContext::Traits* traits);
     
     void makeDefaultTraits(bool stencil);
+#if defined (HAVE_OPENVR)
+    WindowBuilder(bool stencil, osg::ref_ptr<OpenVRDevice> openvrDevice);
+    void makeDefaultTraits(bool stencil, osg::ref_ptr<OpenVRDevice> openvrDevice);
+#endif // HAVE_OPENVR
     
     osg::ref_ptr<osg::GraphicsContext::Traits> defaultTraits;
     int defaultCounter;

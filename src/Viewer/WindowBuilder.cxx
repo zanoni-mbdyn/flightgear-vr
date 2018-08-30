@@ -35,6 +35,10 @@
 #endif
 
 
+#if defined(HAVE_OPENVR)
+    #include <VR/openvrdevice.hxx>
+#endif
+
 using namespace std;
 using namespace osg;
 
@@ -54,6 +58,32 @@ const string WindowBuilder::defaultWindowName("FlightGear");
 // default to true (historical behaviour), we will clear the flag if
 // we run another GUI.
 bool WindowBuilder::poseAsStandaloneApp = true;
+
+#if defined (HAVE_OPENVR)
+void WindowBuilder::initWindowBuilder(bool stencil, osg::ref_ptr<OpenVRDevice> openvrDevice)
+{
+	windowBuilder = new WindowBuilder(stencil, openvrDevice);
+}
+
+WindowBuilder::WindowBuilder(bool stencil, osg::ref_ptr<OpenVRDevice> openvrDevice)
+{
+#if defined (HAVE_QT)
+    usingQtGraphicsWindow = fgGetBool("/sim/rendering/graphics-window-qt", false);
+#endif // HAVE_QT
+    makeDefaultTraits(stencil, openvrDevice);
+}
+
+void WindowBuilder::makeDefaultTraits(bool stencil, osg::ref_ptr<OpenVRDevice> openvrDevice)
+{
+	defaultTraits = openvrDevice->graphicsContextTraits();
+	defaultTraits->windowName = "FlightGear";
+	if (stencil)
+	{
+	    defaultTraits->stencil = 8;
+	}
+}
+
+#endif // HAVE_OPENVR
 
 void WindowBuilder::initWindowBuilder(bool stencil)
 {
@@ -327,7 +357,7 @@ GraphicsWindow* WindowBuilder::buildWindow(const SGPropertyNode* winNode)
             data->isPrimaryWindow = drawGUI;
         }
 #endif
-        
+ 
         GraphicsContext* gc = GraphicsContext::createGraphicsContext(traits);
         if (gc) {
             GraphicsWindow* window = WindowSystemAdapter::getWSA()
@@ -351,8 +381,10 @@ GraphicsWindow* WindowBuilder::getDefaultWindow()
         = WindowSystemAdapter::getWSA()->findWindow(defaultWindowName);
     if (defaultWindow)
         return defaultWindow;
+
     GraphicsContext::Traits* traits
         = new GraphicsContext::Traits(*defaultTraits);
+
     traits->windowName = "FlightGear";
 
     setMacPoseAsStandaloneApp(traits);

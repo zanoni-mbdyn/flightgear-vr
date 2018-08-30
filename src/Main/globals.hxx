@@ -33,6 +33,10 @@
 #include <string>
 #include <memory>
 
+#if defined (HAVE_OPENVR)
+#include <VR/openvrdevice.hxx>
+#endif // HAVE_OPENVR
+
 typedef std::vector<std::string> string_list;
 typedef std::vector<SGPath> PathList;
 

@@ -246,7 +246,7 @@ public:
      */
    
     static void buildDefaultGroup(osgViewer::Viewer* viewer);
-    
+ 
     static void setDefault(CameraGroup* group) { _defaultGroup = group; }
     /** Get the default CameraGroup.
      * @return the default camera group.

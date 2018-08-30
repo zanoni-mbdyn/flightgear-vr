@@ -127,6 +127,12 @@ FGRenderer();
 
 	void setPlanes( double zNear, double zFar );
 
+#ifdef HAVE_OPENVR
+	const osg::ref_ptr<OpenVRDevice> getOpenVRDevice(void) {return _openvrDevice;};
+	void setupVR(osg::GraphicsContext* gc);
+	bool useVR(void) {return _useVR;};
+#endif // HAVE_OPENVR
+
 protected:
     osg::ref_ptr<osgViewer::Viewer> viewer;
     osg::ref_ptr<flightgear::FGEventHandler> eventHandler;

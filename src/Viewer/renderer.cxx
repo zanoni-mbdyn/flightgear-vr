@@ -122,6 +122,7 @@
 #if defined(HAVE_OPENVR)
 #include <VR/openvrdevice.hxx>
 #include <VR/openvrnode.hxx>
+#include <VR/openvrupdateslavecallback.hxx>
 #endif
 
 using namespace osg;
@@ -423,38 +424,6 @@ FGRenderer::preinit( void )
     _viewerSceneRoot->setName("viewerSceneRoot");
     viewer->setSceneData(_viewerSceneRoot);
 
-#ifdef HAVE_OPENVR
-    if (!OpenVRDevice::hmdPresent())
-    {
-	    SG_LOG(SG_GENERAL, SG_WARN, "VR enabled during compilation but no HMD device was found.\n"
-	    "VR support will be disabled.\n"
-	    );
-    } 
-    else
-    {
-	    SG_LOG(SG_GENERAL, SG_INFO, "VR enabled during compilation: found HMD device\n");
-	    
-	    // Open the HMD
-	    SG_LOG(SG_GENERAL, SG_INFO, "Initializing HMD device\n");
-	    float nearClip = 0.01f;
-	    float farClip = 10000.0f;
-	    float worldUnitsPerMetre = 1.0f;
-	    int samples = 4;
-	    
-	    _openvrDevice = new OpenVRDevice(nearClip, farClip, worldUnitsPerMetre, samples);
-	    if (!_openvrDevice->hmdInitialized())
-	    {
-	    	SG_LOG(SG_GENERAL, SG_WARN, "Unable to initialize HMD device.\n"
-	    	"VR support will be disabled.\n"
-	    	);
-	    } 
-	    else 
-	    {
-		_useVR = true;
-	    }
-    }
-#endif // HAVE_OPENVR
-
     _quickDrawable = nullptr;
     _splash = new SplashScreen;
     if (_classicalRenderer) {
@@ -484,6 +453,12 @@ FGRenderer::preinit( void )
     // is completely visible. We reset this value when the splash screen
     // is fading out.
     fgSetBool("/sim/menubar/overlap-hide", true);
+
+#ifdef HAVE_OPENVR
+    // Things to do for VR when viewer is realized
+    osg::ref_ptr<OpenVRRealizeOperation> openvrRealizeOperation = new OpenVRRealizeOperation(_openvrDevice);
+    viewer->setRealizeOperation(openvrRealizeOperation.get());
+#endif // HAVE_OPENVR
 }
 
 class ShadowMapSizeListener : public SGPropertyChangeListener {
@@ -616,6 +591,38 @@ FGRenderer::init( void )
     if (!_classicalRenderer) {
         eventHandler->setChangeStatsCameraRenderOrder( true );
     }
+
+#ifdef HAVE_OPENVR
+    if (!OpenVRDevice::hmdPresent())
+    {
+	    SG_LOG(SG_GENERAL, SG_WARN, "VR enabled during compilation but no HMD device was found.\n"
+	    "VR support will be disabled.\n"
+	    );
+    } 
+    else
+    {
+	    SG_LOG(SG_GENERAL, SG_INFO, "VR enabled during compilation: found HMD device\n");
+	    
+	    // Open the HMD
+	    SG_LOG(SG_GENERAL, SG_INFO, "Initializing HMD device\n");
+	    float nearClip = 0.01f;
+	    float farClip = 10000.0f;
+	    float worldUnitsPerMetre = 1.0f;
+	    int samples = 4;
+	    
+	    _openvrDevice = new OpenVRDevice(nearClip, farClip, worldUnitsPerMetre, samples);
+	    if (!_openvrDevice->hmdInitialized())
+	    {
+	    	SG_LOG(SG_GENERAL, SG_WARN, "Unable to initialize HMD device.\n"
+	    	"VR support will be disabled.\n"
+	    	);
+	    } 
+	    else 
+	    {
+		_useVR = true;
+	    }
+    }
+#endif // HAVE_OPENVR
 }
 
 void installCullVisitor(Camera* camera)
@@ -1199,6 +1206,89 @@ FGRenderer::buildDeferredFullscreenCamera( flightgear::CameraInfo* info, const F
     return camera;
 }
 
+#ifdef HAVE_OPENVR
+void FGRenderer::setupVR(osg::GraphicsContext* gc)
+{
+    // osgViewer::Viewer* viewer = globals->get_renderer()->getViewer();
+    // osg::Camera* mainCamera = viewer->getCamera();
+    // osg::GraphicsContext* gc = mainCamera->getGraphicsContext();
+
+    osg::Camera* mainCamera = nullptr;
+    for ( CameraGroup::CameraIterator ii = CameraGroup::getDefault()->camerasBegin();
+	  ii != CameraGroup::getDefault()->camerasEnd();
+	  ++ii )
+	{
+		CameraInfo* info = ii->get();
+		mainCamera = info->getCamera(MAIN_CAMERA);
+		if (!mainCamera) continue;
+	}
+    // Attach a callback to detect swap
+    osg::ref_ptr<OpenVRSwapCallback> swapCallback = new OpenVRSwapCallback(_openvrDevice);
+
+    if (gc) {
+	    gc->setSwapCallback(swapCallback);
+    } else {
+	    SG_LOG(SG_GENERAL, SG_WARN, "setupVR: Unable to find a valid GraphicsContext. Aborting...\n");
+	    std::cerr << "setupVR: Unable to find a valid GraphicsContext. Aborting...\n " << std::endl;
+	    return;
+    }
+
+    mainCamera->setProjectionMatrix(_openvrDevice->projectionMatrixCenter());
+
+    // Create RTT cameras and attach textures
+    osg::Vec4 clearColor = mainCamera->getClearColor();
+    osg::observer_ptr<osg::Camera> cameraRTTLeft = _openvrDevice->createRTTCamera(OpenVRDevice::LEFT, 
+		    osg::Camera::RELATIVE_RF, clearColor, gc);
+    osg::observer_ptr<osg::Camera> cameraRTTRight = _openvrDevice->createRTTCamera(OpenVRDevice::RIGHT, 
+		    osg::Camera::RELATIVE_RF, clearColor, gc);
+    cameraRTTLeft->setName("LeftRTT");
+    cameraRTTRight->setName("RightRTT");
+
+    // Add RTT cameras as slaves, specifying offsets for the projection
+    viewer->addSlave(cameraRTTLeft.get(),
+		    _openvrDevice->projectionOffsetMatrixLeft(),
+		    _openvrDevice->viewMatrixLeft(),
+		    true);
+    viewer->addSlave(cameraRTTRight.get(),
+		    _openvrDevice->projectionOffsetMatrixRight(),
+		    _openvrDevice->viewMatrixRight(),
+		    true);
+
+    // Find RTT cameras slave indexes (FIXME: is there a better way to do this?)
+    const int numSlaves = viewer->getNumSlaves();
+    int ii = 0;
+    int iRTTFound = 0;
+    int iRTTLeftSlaveIndex = 0;
+    int iRTTRightSlaveIndex = 0;
+    while (ii < numSlaves || iRTTFound < 2)
+    {
+	    if ( viewer->getSlave(ii)._camera->getName() == "LeftRTT" )
+	    {
+		    iRTTLeftSlaveIndex = ii;
+		    iRTTFound++;
+	    } else if ( viewer->getSlave(ii)._camera->getName() == "RightRTT" )
+	    {
+		    iRTTRightSlaveIndex = ii;
+		    iRTTFound++;
+	    }
+	    ii++;
+    }
+
+    // Update RTT callbacks
+    viewer->getSlave(iRTTLeftSlaveIndex)._updateSlaveCallback = 
+	    new OpenVRUpdateSlaveCallback(OpenVRUpdateSlaveCallback::LEFT_CAMERA, 
+			    _openvrDevice.get(),
+			    swapCallback.get());
+    viewer->getSlave(iRTTRightSlaveIndex)._updateSlaveCallback = 
+	    new OpenVRUpdateSlaveCallback(OpenVRUpdateSlaveCallback::RIGHT_CAMERA, 
+			    _openvrDevice.get(),
+			    swapCallback.get());
+
+    // Disable GraphicsContext for mainCamera since we don't need it anymore
+    mainCamera->setGraphicsContext(nullptr);
+}
+#endif // HAVE_OPENVR
+
 osg::Camera* 
 FGRenderer::buildDeferredFullscreenCamera( flightgear::CameraInfo* info, osg::GraphicsContext* gc, const FGRenderingPipeline::Stage* stage )
 {
@@ -1272,6 +1362,7 @@ FGRenderer::buildDeferredDisplayCamera( osg::Camera* camera, flightgear::CameraI
     ss->addUniform( _shadowDistances );
     ss->addUniform( _fogColor );
     ss->addUniform( _fogDensity );
+ 
 }
 
 void
@@ -1457,7 +1548,6 @@ FGRenderer::setupView( void )
     // my hardware/driver requires many more.
     osg::PolygonOffset::setUnitsMultiplier(1);
     osg::PolygonOffset::setFactorMultiplier(1);
-
     setupRoot();
   
 // build the sky
@@ -1596,6 +1686,7 @@ FGRenderer::setupView( void )
     if ( !_classicalRenderer ) {
         _deferredRealRoot->addChild( _viewerSceneRoot.get() );
     }
+
 }
 
 // Update all Visuals (redraws anything graphics related)

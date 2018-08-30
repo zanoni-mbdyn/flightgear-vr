@@ -371,6 +371,9 @@ static void fgIdleFunction ( void ) {
         // We've finished all our initialization steps, from now on we
         // run the main loop.
         fgSetBool("sim/sceneryloaded", false);
+#ifdef HAVE_OPENVR
+    	globals->get_renderer()->setupVR(WindowSystemAdapter::getWSA()->windows[0]->gc);
+#endif // HAVE_OPENVR
         registerMainLoop();
     }
 
