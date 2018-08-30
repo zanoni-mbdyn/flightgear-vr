@@ -364,6 +364,7 @@ FGRenderer::FGRenderer() :
     _shadowDistances( new osg::Uniform( "fg_ShadowDistances", osg::Vec4f(5.0, 50.0, 500.0, 5000.0 ) ) ),
 #ifdef HAVE_OPENVR
     _useVR(false),
+    _isVRReady(false),
 #endif // HAVE_OPENVR
     _depthInColor( new osg::Uniform( "fg_DepthInColor", false ) )
 {
@@ -1207,42 +1208,88 @@ FGRenderer::buildDeferredFullscreenCamera( flightgear::CameraInfo* info, const F
 }
 
 #ifdef HAVE_OPENVR
-void FGRenderer::setupVR(osg::GraphicsContext* gc)
+void FGRenderer::setupVR(void)
 {
     // osgViewer::Viewer* viewer = globals->get_renderer()->getViewer();
     // osg::Camera* mainCamera = viewer->getCamera();
     // osg::GraphicsContext* gc = mainCamera->getGraphicsContext();
+    
+    // Attach a callback to detect swap
+    osg::ref_ptr<OpenVRSwapCallback> swapCallback = new OpenVRSwapCallback(_openvrDevice);
 
-    osg::Camera* mainCamera = nullptr;
     for ( CameraGroup::CameraIterator ii = CameraGroup::getDefault()->camerasBegin();
 	  ii != CameraGroup::getDefault()->camerasEnd();
 	  ++ii )
 	{
-		CameraInfo* info = ii->get();
-		mainCamera = info->getCamera(MAIN_CAMERA);
-		if (!mainCamera) continue;
+	    osg::GraphicsContext* gc;
+	    CameraInfo* info = ii->get();
+	    osg::Camera* camera = nullptr;
+	    if ( (camera = info->getCamera(MAIN_CAMERA)) ) {
+		gc = camera->getGraphicsContext();
+		if (!gc) { 
+		    SG_LOG(SG_GENERAL, SG_WARN, "setupVR: Unable to find a valid GraphicsContext for MAIN_CAMERA. Aborting...\n");
+		    std::cerr << "setupVR: Unable to find a valid GraphicsContext for MAIN_CAMERA. Aborting...\n " << std::endl;
+		} else {
+		    gc->setSwapCallback(swapCallback);
+		    setupVRCamera(camera, gc, swapCallback);
+		}
+	    } else if ( (camera = info->getCamera(FAR_CAMERA)) ) {
+		gc = camera->getGraphicsContext();
+		if (!gc) { 
+		    SG_LOG(SG_GENERAL, SG_WARN, "setupVR: Unable to find a valid GraphicsContext for FAR_CAMERA. Aborting...\n");
+		    std::cerr << "setupVR: Unable to find a valid GraphicsContext for FAR_CAMERA. Aborting...\n " << std::endl;
+		} else {
+		    gc->setSwapCallback(swapCallback);
+		    setupVRCamera(camera, gc, swapCallback);
+		}
+	    } else if ( (camera = info->getCamera(GEOMETRY_CAMERA)) ) {
+		gc = camera->getGraphicsContext();
+		if (!gc) { 
+		    SG_LOG(SG_GENERAL, SG_WARN, "setupVR: Unable to find a valid GraphicsContext for GEOMETRY_CAMERA. Aborting...\n");
+		    std::cerr << "setupVR: Unable to find a valid GraphicsContext for GEOMETRY_CAMERA. Aborting...\n " << std::endl;
+		} else {
+		    gc->setSwapCallback(swapCallback);
+		    setupVRCamera(camera, gc, swapCallback);
+		}
+	    } else if ( (camera = info->getCamera(SHADOW_CAMERA)) ) {
+		gc = camera->getGraphicsContext();
+		if (!gc) { 
+		    SG_LOG(SG_GENERAL, SG_WARN, "setupVR: Unable to find a valid GraphicsContext for SHADOW_CAMERA. Aborting...\n");
+		    std::cerr << "setupVR: Unable to find a valid GraphicsContext for SHADOW_CAMERA. Aborting...\n " << std::endl;
+		} else {
+		    gc->setSwapCallback(swapCallback);
+		    setupVRCamera(camera, gc, swapCallback);
+		}
+	    } else if ( (camera = info->getCamera(LIGHTING_CAMERA)) ) {
+		gc = camera->getGraphicsContext();
+		if (!gc) { 
+		    SG_LOG(SG_GENERAL, SG_WARN, "setupVR: Unable to find a valid GraphicsContext for LIGHTING_CAMERA. Aborting...\n");
+		    std::cerr << "setupVR: Unable to find a valid GraphicsContext for LIGHTING_CAMERA. Aborting...\n " << std::endl;
+		} else {
+		    gc->setSwapCallback(swapCallback);
+		    setupVRCamera(camera, gc, swapCallback);
+		}
+	    } else {
+		continue;
+	    }
 	}
-    // Attach a callback to detect swap
-    osg::ref_ptr<OpenVRSwapCallback> swapCallback = new OpenVRSwapCallback(_openvrDevice);
+}
 
-    if (gc) {
-	    gc->setSwapCallback(swapCallback);
-    } else {
-	    SG_LOG(SG_GENERAL, SG_WARN, "setupVR: Unable to find a valid GraphicsContext. Aborting...\n");
-	    std::cerr << "setupVR: Unable to find a valid GraphicsContext. Aborting...\n " << std::endl;
-	    return;
-    }
+void FGRenderer::setupVRCamera(osg::Camera* camera, 
+			       osg::GraphicsContext* gc,
+	       		       osg::ref_ptr<OpenVRSwapCallback> swapCallback)
+{
 
-    mainCamera->setProjectionMatrix(_openvrDevice->projectionMatrixCenter());
+    camera->setProjectionMatrix(_openvrDevice->projectionMatrixCenter());
 
     // Create RTT cameras and attach textures
-    osg::Vec4 clearColor = mainCamera->getClearColor();
+    osg::Vec4 clearColor = camera->getClearColor();
     osg::observer_ptr<osg::Camera> cameraRTTLeft = _openvrDevice->createRTTCamera(OpenVRDevice::LEFT, 
 		    osg::Camera::RELATIVE_RF, clearColor, gc);
     osg::observer_ptr<osg::Camera> cameraRTTRight = _openvrDevice->createRTTCamera(OpenVRDevice::RIGHT, 
 		    osg::Camera::RELATIVE_RF, clearColor, gc);
-    cameraRTTLeft->setName("LeftRTT");
-    cameraRTTRight->setName("RightRTT");
+    cameraRTTLeft->setName(camera->getName() + "_LeftRTT");
+    cameraRTTRight->setName(camera->getName() + "_RightRTT");
 
     // Add RTT cameras as slaves, specifying offsets for the projection
     viewer->addSlave(cameraRTTLeft.get(),
@@ -1262,11 +1309,11 @@ void FGRenderer::setupVR(osg::GraphicsContext* gc)
     int iRTTRightSlaveIndex = 0;
     while (ii < numSlaves || iRTTFound < 2)
     {
-	    if ( viewer->getSlave(ii)._camera->getName() == "LeftRTT" )
+	    if ( viewer->getSlave(ii)._camera->getName() == camera->getName() + "_LeftRTT" )
 	    {
 		    iRTTLeftSlaveIndex = ii;
 		    iRTTFound++;
-	    } else if ( viewer->getSlave(ii)._camera->getName() == "RightRTT" )
+	    } else if ( viewer->getSlave(ii)._camera->getName() == camera->getName() + "_RightRTT" )
 	    {
 		    iRTTRightSlaveIndex = ii;
 		    iRTTFound++;
@@ -1284,8 +1331,8 @@ void FGRenderer::setupVR(osg::GraphicsContext* gc)
 			    _openvrDevice.get(),
 			    swapCallback.get());
 
-    // Disable GraphicsContext for mainCamera since we don't need it anymore
-    mainCamera->setGraphicsContext(nullptr);
+    // Disable GraphicsContext for camera since we don't need it anymore
+    camera->setGraphicsContext(nullptr);
 }
 #endif // HAVE_OPENVR
 
@@ -1774,6 +1821,13 @@ FGRenderer::update( ) {
 		_fogColor->set( toOsg( l->adj_fog_color() ) );
 		_fogDensity->set( float( _updateVisitor->getFogExp2Density() ) );
 	}
+#ifdef HAVE_OPENVR
+	if (_useVR && !_isVRReady && _splash_alpha->getDoubleValue() == 0.0)
+	{
+		setupVR();
+		_isVRReady = true;
+	}	
+#endif // HAVE_OPENVR
 }
 
 void

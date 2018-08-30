@@ -14,6 +14,7 @@
 
 #if defined(HAVE_OPENVR)
 #include <VR/openvrdevice.hxx>
+#include <VR/openvrupdateslavecallback.hxx>
 #endif
 
 namespace osg
@@ -129,8 +130,10 @@ FGRenderer();
 
 #ifdef HAVE_OPENVR
 	const osg::ref_ptr<OpenVRDevice> getOpenVRDevice(void) {return _openvrDevice;};
-	void setupVR(osg::GraphicsContext* gc);
+	void setupVR(void);
 	bool useVR(void) {return _useVR;};
+	void setVRReady(bool isReady) {_isVRReady = isReady;};
+	bool getVRReady(void) {return _isVRReady;};
 #endif // HAVE_OPENVR
 
 protected:
@@ -164,7 +167,11 @@ protected:
 
 #ifdef HAVE_OPENVR
     bool _useVR;
+    bool _isVRReady;
     osg::ref_ptr<OpenVRDevice> _openvrDevice;
+    void setupVRCamera(osg::Camera* camera, 
+		       osg::GraphicsContext* gc, 
+		       osg::ref_ptr<OpenVRSwapCallback> swapCallback);
 #endif // HAVE_OPENVR
 
     typedef std::vector<SGPropertyChangeListener*> SGPropertyChangeListenerVec;
