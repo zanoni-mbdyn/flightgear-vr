@@ -1226,7 +1226,7 @@ void FGRenderer::setupVR(void)
 				++ii)
 		{
 			RenderStageInfo& rsi = ii->second;
-			setupVRCamera(rsi.camera, rsi.camera->getGraphicsContext(), swapCallback);
+			// setupVRCamera(rsi.camera, rsi.camera->getGraphicsContext(), swapCallback);
 			unsigned int slaveIndex = viewer->findSlaveIndexForCamera(rsi.camera);
 			setupVRCamera(viewer->getSlave(slaveIndex)._camera, 
 					viewer->getSlave(slaveIndex)._camera->getGraphicsContext(),
