@@ -142,7 +142,7 @@ void FGSoundManager::activate(bool State)
 
 void FGSoundManager::update_device_list()
 {
-    std::vector <const char*>devices = get_available_devices();
+    std::vector <std::string>devices = get_available_devices();
     for (unsigned int i=0; i<devices.size(); i++) {
         SGPropertyNode *p = fgGetNode("/sim/sound/devices/device", i, true);
         p->setStringValue(devices[i]);

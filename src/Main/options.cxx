@@ -2263,11 +2263,21 @@ void Options::processArgResult(int result)
     cout << renderer << " provided by " << vendor << endl;
     cout << endl << "No. Device" << endl;
 
+    /*
     vector <const char*>devices = smgr.get_available_devices();
     for (vector <const char*>::size_type i=0; i<devices.size(); i++) {
       cout << i << ".  \"" << devices[i] << "\"" << endl;
     }
     devices.clear();
+    */
+
+    std::vector<std::string> devices;
+
+    for (unsigned long int i = 0; i != devices.size(); i++)
+    {
+	    std::cout << i << ". \"" << devices[i] << "\"" << std::endl;
+    }
+
     smgr.stop();
     exit(0);
   } else if (result == FG_OPTIONS_EXIT) {
