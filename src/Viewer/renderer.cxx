@@ -1215,7 +1215,7 @@ void FGRenderer::setupVR(void)
     // Attach a callback to detect swap
     osg::ref_ptr<OpenVRSwapCallback> swapCallback = new OpenVRSwapCallback(_openvrDevice);
 
-    osgViewer::Viewer* viewer = CameraGroup::getDefault()->getViewer();
+    // osgViewer::Viewer* viewer = CameraGroup::getDefault()->getViewer();
     for ( CameraGroup::CameraIterator i = CameraGroup::getDefault()->camerasBegin();
 	  i != CameraGroup::getDefault()->camerasEnd();
 	  ++i )
@@ -1226,10 +1226,10 @@ void FGRenderer::setupVR(void)
 				++ii)
 		{
 			RenderStageInfo& rsi = ii->second;
-			// setupVRCamera(rsi.camera, rsi.camera->getGraphicsContext(), swapCallback);
-			unsigned int slaveIndex = viewer->findSlaveIndexForCamera(rsi.camera);
-			setupVRCamera(viewer->getSlave(slaveIndex)._camera, 
-					viewer->getSlave(slaveIndex)._camera->getGraphicsContext(),
+			SG_LOG(SG_GENERAL, SG_INFO, "setupVR(): working on camera " << rsi.camera->getName() << std::endl);
+			// unsigned int slaveIndex = viewer->findSlaveIndexForCamera(rsi.camera);
+			setupVRCamera(rsi.camera, 
+					rsi.camera->getGraphicsContext(),
 					swapCallback);
 		}
 		
