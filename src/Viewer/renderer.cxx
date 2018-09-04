@@ -1226,11 +1226,16 @@ void FGRenderer::setupVR(void)
 				++ii)
 		{
 			RenderStageInfo& rsi = ii->second;
-			SG_LOG(SG_GENERAL, SG_INFO, "setupVR(): working on camera " << rsi.camera->getName() << std::endl);
-			// unsigned int slaveIndex = viewer->findSlaveIndexForCamera(rsi.camera);
-			setupVRCamera(rsi.camera, 
-					rsi.camera->getGraphicsContext(),
-					swapCallback);
+			
+			if (rsi.camera->getName() != "GUICamera") 
+			{
+				SG_LOG(SG_GENERAL, SG_INFO, "setupVR(): working on camera " << rsi.camera->getName());
+				rsi.camera->getGraphicsContext()->setSwapCallback(swapCallback);
+				setupVRCamera(rsi.camera, 
+						rsi.camera->getGraphicsContext(),
+						swapCallback);
+				SG_LOG(SG_GENERAL, SG_INFO, "setupVR(): done preparing camera " << rsi.camera->getName());
+			}
 		}
 		
 	}
