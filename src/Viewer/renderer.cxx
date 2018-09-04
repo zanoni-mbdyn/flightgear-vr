@@ -456,9 +456,11 @@ FGRenderer::preinit( void )
     fgSetBool("/sim/menubar/overlap-hide", true);
 
 #ifdef HAVE_OPENVR
-    // Things to do for VR when viewer is realized
-    osg::ref_ptr<OpenVRRealizeOperation> openvrRealizeOperation = new OpenVRRealizeOperation(_openvrDevice);
-    viewer->setRealizeOperation(openvrRealizeOperation.get());
+    if (_useVR) {
+    	// Things to do for VR when viewer is realized
+    	osg::ref_ptr<OpenVRRealizeOperation> openvrRealizeOperation = new OpenVRRealizeOperation(_openvrDevice);
+    	viewer->setRealizeOperation(openvrRealizeOperation.get());
+    }
 #endif // HAVE_OPENVR
 }
 
