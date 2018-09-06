@@ -12,6 +12,11 @@
 
 #include "renderingpipeline.hxx"
 
+#if defined(HAVE_OPENVR)
+#include <VR/openvrdevice.hxx>
+#include <VR/openvrupdateslavecallback.hxx>
+#endif
+
 namespace osg
 {
 class Camera;
@@ -123,6 +128,12 @@ FGRenderer();
 
     void setPlanes( double zNear, double zFar );
     void printCameras(void);
+
+#ifdef HAVE_OPENVR
+    void setupVR(osg::ref_ptr<osgViewer::Viewer> viewer, 
+		    osg::ref_ptr<OpenVRDevice> openvrDevice,
+		    osg::ref_ptr<OpenVRSwapCallback> swapCallback);
+#endif // HAVE_OPENVR
 
 protected:
     osg::ref_ptr<osgViewer::Viewer> viewer;

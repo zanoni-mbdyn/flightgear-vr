@@ -119,6 +119,11 @@
 #include <Viewer/PUICamera.hxx>
 #endif
 
+#if defined(HAVE_OPENVR)
+#include <VR/openvrdevice.hxx>
+#include <VR/openvrupdateslavecallback.hxx>
+#endif
+
 using namespace osg;
 using namespace simgear;
 using namespace flightgear;
@@ -1152,184 +1157,38 @@ FGRenderer::buildDeferredFullscreenCamera( flightgear::CameraInfo* info, const F
 void FGRenderer::printCameras(void)
 {	 
     SG_LOG(SG_GENERAL, SG_INFO, "printCameras(): inspecting Default Group");
-    for ( CameraGroup::CameraIterator ii = CameraGroup::getDefault()->camerasBegin();
-	  ii != CameraGroup::getDefault()->camerasEnd();
-	  ++ii )
-	{
-	    CameraInfo* info = ii->get();
-	    osg::Camera* camera = nullptr;
-	    if (info->name != "GUI camera") {
-		    if ( (camera = info->getCamera(MAIN_CAMERA)) ) {
-			    SG_LOG(SG_GENERAL, SG_INFO, "-- MAIN_CAMERA");
-		    } else if ( (camera = info->getCamera(FAR_CAMERA)) ) {
-			    SG_LOG(SG_GENERAL, SG_INFO, "-- FAR_CAMERA");
-		    } else if ( (camera = info->getCamera(GEOMETRY_CAMERA)) ) {
-			    SG_LOG(SG_GENERAL, SG_INFO, "-- GEOMETRY_CAMERA");
-		    } else if ( (camera = info->getCamera(SHADOW_CAMERA)) ) {
-			    SG_LOG(SG_GENERAL, SG_INFO, "-- SHADOW_CAMERA");
-		    } else if ( (camera = info->getCamera(LIGHTING_CAMERA)) ) {
-			    SG_LOG(SG_GENERAL, SG_INFO, "-- LIGHTING_CAMERA");
-		    }
-	    }
-	}
-}
-
-#if 0
-void FGRenderer::setupVR(void)
-{ 
-    // Attach a callback to detect swap
-    osg::ref_ptr<OpenVRSwapCallback> swapCallback = new OpenVRSwapCallback(_openvrDevice);
-
-    /*
     for ( CameraGroup::CameraIterator i = CameraGroup::getDefault()->camerasBegin();
 	  i != CameraGroup::getDefault()->camerasEnd();
 	  ++i )
 	{
 		CameraInfo* info = i->get();
-		for (CameraMap::iterator ii = info->cameras.begin();
-				ii != info->cameras.end(); 
-				++ii)
-		{
-
-			RenderStageInfo& rsi = ii->second;
-			
-			if (rsi.camera->getName() != "GUICamera") 
-			{
-				SG_LOG(SG_GENERAL, SG_INFO, "setupVR(): working on camera " << rsi.camera->getName());
-				rsi.camera->getGraphicsContext()->setSwapCallback(swapCallback);
-				setupVRCamera(rsi.camera, 
-						rsi.camera->getGraphicsContext(),
-						swapCallback);
-				SG_LOG(SG_GENERAL, SG_INFO, "setupVR(): done preparing camera " << rsi.camera->getName());
-			}
-		}
+		SG_LOG(SG_GENERAL, SG_INFO, "-- " << info->name);
 		
 	}
-    */
+}
 
-    for ( CameraGroup::CameraIterator ii = CameraGroup::getDefault()->camerasBegin();
-	  ii != CameraGroup::getDefault()->camerasEnd();
-	  ++ii )
+#ifdef HAVE_OPENVR
+void FGRenderer::setupVR(osg::ref_ptr<osgViewer::Viewer> viewer, 
+			 osg::ref_ptr<OpenVRDevice> openvrDevice,
+			 osg::ref_ptr<OpenVRSwapCallback> swapCallback)
+{ 
+
+    for ( CameraGroup::CameraIterator i = CameraGroup::getDefault()->camerasBegin();
+	  i != CameraGroup::getDefault()->camerasEnd();
+	  ++i )
 	{
-	    osg::GraphicsContext* gc;
-	    CameraInfo* info = ii->get();
-	    osg::Camera* camera = nullptr;
-	    if ( (camera = info->getCamera(MAIN_CAMERA)) ) {
-		gc = camera->getGraphicsContext();
-		if (!gc) { 
-		    SG_LOG(SG_GENERAL, SG_WARN, "setupVRCamera(): Unable to find a valid GraphicsContext for MAIN_CAMERA. Aborting...\n");
-		} else {
-		    SG_LOG(SG_GENERAL, SG_INFO, "setupVRCamera(): Setting up MAIN_CAMERA for VR");
-		    gc->setSwapCallback(swapCallback);
-		    setupVRCamera(camera, gc, swapCallback);
-		    SG_LOG(SG_GENERAL, SG_INFO, "setupVRCamera(): Finished setting up MAIN_CAMERA.");
+		CameraInfo* info = i->get();
+		if (info->name == "VRC") {
+			SG_LOG(SG_GENERAL, SG_INFO, "setupVR(): working on camera " << info->name);
+			info->setupVRCameras(viewer, openvrDevice, swapCallback);
+			SG_LOG(SG_GENERAL, SG_INFO, "setupVR(): done preparing camera " << info->name);
 		}
-	    } else if ( (camera = info->getCamera(FAR_CAMERA)) ) {
-		gc = camera->getGraphicsContext();
-		if (!gc) {
-		    SG_LOG(SG_GENERAL, SG_WARN, "setupVRCamera(): Unable to find a valid GraphicsContext for FAR_CAMERA. Aborting...\n");
-		} else {
-		    SG_LOG(SG_GENERAL, SG_INFO, "setupVRCamera(): Setting up FAR_CAMERA for VR");
-		    gc->setSwapCallback(swapCallback);
-		    setupVRCamera(camera, gc, swapCallback);
-		    std::cout << "setupVRCamera(): Finished setting up FAR_CAMERA." << std::endl;
-		}
-	    } else if ( (camera = info->getCamera(GEOMETRY_CAMERA)) ) {
-		gc = camera->getGraphicsContext();
-		if (!gc) { 
-		    SG_LOG(SG_GENERAL, SG_WARN, "setupVRCamera(): Unable to find a valid GraphicsContext for GEOMETRY_CAMERA. Aborting...\n");
-		} else {
-		    SG_LOG(SG_GENERAL, SG_INFO, "setupVRCamera(): Setting up GEOMETRY_CAMERA for VR");
-		    gc->setSwapCallback(swapCallback);
-		    setupVRCamera(camera, gc, swapCallback);
-		    SG_LOG(SG_GENERAL, SG_INFO, "setupVRCamera(): Finished setting up GEOMETRY_CAMERA.");
-		}
-	    } else if ( (camera = info->getCamera(SHADOW_CAMERA)) ) {
-		gc = camera->getGraphicsContext();
-		if (!gc) { 
-		    SG_LOG(SG_GENERAL, SG_WARN, "setupVRCamera(): Unable to find a valid GraphicsContext for SHADOW_CAMERA. Aborting...\n");
-		} else {
-		    SG_LOG(SG_GENERAL, SG_INFO, "setupVRCamera(): Setting up SHADOW_CAMERA for VR");
-		    gc->setSwapCallback(swapCallback);
-		    setupVRCamera(camera, gc, swapCallback);
-		    SG_LOG(SG_GENERAL, SG_INFO, "setupVRCamera(): Finished setting up SHADOW_CAMERA.");
-		}
-	    } else if ( (camera = info->getCamera(LIGHTING_CAMERA)) ) {
-		gc = camera->getGraphicsContext();
-		if (!gc) { 
-		    SG_LOG(SG_GENERAL, SG_WARN, "setupVRCamera(): Unable to find a valid GraphicsContext for LIGHTING_CAMERA. Aborting...\n");
-		} else {
-		    SG_LOG(SG_GENERAL, SG_INFO, "setupVRCamera(): Setting up LIGHTING_CAMERA for VR");
-		    gc->setSwapCallback(swapCallback);
-		    setupVRCamera(camera, gc, swapCallback);
-		    SG_LOG(SG_GENERAL, SG_INFO, "setupVRCamera(): Finished setting up LIGHTING_CAMERA.");
-		}
-	    } else {
-		continue;
-	    }
+			
+		
 	}
+
 }
-
-void FGRenderer::setupVRCamera(osg::Camera* camera, 
-			       osg::GraphicsContext* gc,
-	       		       osg::ref_ptr<OpenVRSwapCallback> swapCallback)
-{
-
-    camera->setProjectionMatrix(_openvrDevice->projectionMatrixCenter());
-
-    // Create RTT cameras and attach textures
-    osg::Vec4 clearColor = camera->getClearColor();
-    osg::observer_ptr<osg::Camera> cameraRTTLeft = _openvrDevice->createRTTCamera(OpenVRDevice::LEFT, 
-		    osg::Camera::RELATIVE_RF, clearColor, gc);
-    osg::observer_ptr<osg::Camera> cameraRTTRight = _openvrDevice->createRTTCamera(OpenVRDevice::RIGHT, 
-		    osg::Camera::RELATIVE_RF, clearColor, gc);
-    cameraRTTLeft->setName(camera->getName() + "_LeftRTT");
-    cameraRTTRight->setName(camera->getName() + "_RightRTT");
-
-    // Add RTT cameras as slaves, specifying offsets for the projection
-    viewer->addSlave(cameraRTTLeft.get(),
-		    _openvrDevice->projectionOffsetMatrixLeft(),
-		    _openvrDevice->viewMatrixLeft(),
-		    true);
-    viewer->addSlave(cameraRTTRight.get(),
-		    _openvrDevice->projectionOffsetMatrixRight(),
-		    _openvrDevice->viewMatrixRight(),
-		    true);
-
-    // Find RTT cameras slave indexes (FIXME: is there a better way to do this?)
-    const int numSlaves = viewer->getNumSlaves();
-    int ii = 0;
-    int iRTTFound = 0;
-    int iRTTLeftSlaveIndex = 0;
-    int iRTTRightSlaveIndex = 0;
-    while (ii < numSlaves || iRTTFound < 2)
-    {
-	    if ( viewer->getSlave(ii)._camera->getName() == camera->getName() + "_LeftRTT" )
-	    {
-		    iRTTLeftSlaveIndex = ii;
-		    iRTTFound++;
-	    } else if ( viewer->getSlave(ii)._camera->getName() == camera->getName() + "_RightRTT" )
-	    {
-		    iRTTRightSlaveIndex = ii;
-		    iRTTFound++;
-	    }
-	    ii++;
-    }
-
-    // Update RTT callbacks
-    viewer->getSlave(iRTTLeftSlaveIndex)._updateSlaveCallback = 
-	    new OpenVRUpdateSlaveCallback(OpenVRUpdateSlaveCallback::LEFT_CAMERA, 
-			    _openvrDevice.get(),
-			    swapCallback.get());
-    viewer->getSlave(iRTTRightSlaveIndex)._updateSlaveCallback = 
-	    new OpenVRUpdateSlaveCallback(OpenVRUpdateSlaveCallback::RIGHT_CAMERA, 
-			    _openvrDevice.get(),
-			    swapCallback.get());
-
-    // Disable GraphicsContext for camera since we don't need it anymore
-    camera->setGraphicsContext(nullptr);
-}
-#endif
+#endif // HAVE_OPENVR
 
 osg::Camera* 
 FGRenderer::buildDeferredFullscreenCamera( flightgear::CameraInfo* info, osg::GraphicsContext* gc, const FGRenderingPipeline::Stage* stage )

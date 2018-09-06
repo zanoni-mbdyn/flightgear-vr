@@ -65,6 +65,12 @@
 #include <QCoreApplication>
 #endif
 
+#if defined(HAVE_OPENVR)
+#include <VR/openvrdevice.hxx>
+#include <VR/openvrnode.hxx>
+#include <VR/openvrupdateslavecallback.hxx>
+#endif
+
 // Static linking of OSG needs special macros
 #ifdef OSG_LIBRARY_STATIC
 #include <osgDB/Registry>
@@ -334,6 +340,29 @@ int fgOSMainLoop()
     viewer->setReleaseContextAtEndOfFrameHint(false);
     if (!viewer->isRealized()) {
         viewer->realize();
+#ifdef HAVE_OPENVR
+    	// Things to do for VR when viewer is realized
+	if ( globals->useVR() ) {
+    	    osg::ref_ptr<OpenVRRealizeOperation> openvrRealizeOperation = 
+		new OpenVRRealizeOperation(globals->getOpenVRDevice());
+    	    viewer->setRealizeOperation(openvrRealizeOperation.get());
+	/*	
+	    if ( !(openvrRealizeOperation->realized()) ) 
+	    {
+		SG_LOG(SG_GENERAL, SG_WARN, 
+	 	    "Unable to setup OpenVRRealizeOperation");
+	    } else {
+	*/
+		osg::ref_ptr<OpenVRSwapCallback> swapCallback =
+			new OpenVRSwapCallback(globals->getOpenVRDevice());
+
+		globals->get_renderer()->setupVR(viewer, 
+				globals->getOpenVRDevice(), swapCallback);
+	/*
+	    }
+	*/
+	}
+#endif // HAVE_OPENVR
     }
 
     while (!viewer->done()) {

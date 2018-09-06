@@ -59,30 +59,6 @@ const string WindowBuilder::defaultWindowName("FlightGear");
 // we run another GUI.
 bool WindowBuilder::poseAsStandaloneApp = true;
 
-#if 0
-void WindowBuilder::initWindowBuilder(bool stencil, osg::ref_ptr<OpenVRDevice> openvrDevice)
-{
-	windowBuilder = new WindowBuilder(stencil, openvrDevice);
-}
-
-void WindowBuilder::WindowBuilder(bool stencil, osg::ref_ptr<OpenVRDevice> openvrDevice)
-{
-#if defined (HAVE_QT)
-    usingQtGraphicsWindow = fgGetBool("/sim/rendering/graphics-window-qt", false);
-#endif // HAVE_QT
-    makeDefaultTraits(stencil, openvrDevice);
-}
-
-void WindowBuilder::makeDefaultTraits(bool stencil, osg::ref_ptr<OpenVRDevice> openvrDevice)
-{
-	defaultTraits = openvrDevice->graphicsContextTraits();
-	defaultTraits->windowName = "FlightGear";
-	if (stencil)
-	{
-	    defaultTraits->stencil = 8;
-	}
-}
-#endif
 #ifdef HAVE_OPENVR
 osg::GraphicsContext::Traits* WindowBuilder::makeOpenVRTraits(osg::ref_ptr<OpenVRDevice> openvrDevice)
 {

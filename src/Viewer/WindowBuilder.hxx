@@ -75,8 +75,6 @@ protected:
     
     void makeDefaultTraits(bool stencil);
 #if defined (HAVE_OPENVR)
-    // WindowBuilder(bool stencil, osg::ref_ptr<OpenVRDevice> openvrDevice);
-    // void makeDefaultTraits(bool stencil, osg::ref_ptr<OpenVRDevice> openvrDevice);
     osg::GraphicsContext::Traits* makeOpenVRTraits(osg::ref_ptr<OpenVRDevice> openvrDevice);
 #endif // HAVE_OPENVR
     

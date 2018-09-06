@@ -33,6 +33,7 @@
 
 #if defined (HAVE_OPENVR)
 #include <VR/openvrdevice.hxx>
+#include <VR/openvrupdateslavecallback.hxx>
 #endif // HAVE_OPENVR
 
 // For osgUtil::LineSegmentIntersector::Intersections, which is a typedef.
@@ -183,6 +184,16 @@ struct CameraInfo : public osg::Referenced
     /** The reference points in the current projection space.
      */
     osg::Vec2d thisReference[2];
+#ifdef HAVE_OPENVR
+    void setupVRCameras(osg::ref_ptr<osgViewer::Viewer> viewer,
+		    osg::ref_ptr<OpenVRDevice> openvrDevice,
+		    osg::ref_ptr<OpenVRSwapCallback> swapCallback);
+
+    void setupVRCamera(osg::Camera* camera,
+		    osg::ref_ptr<osgViewer::Viewer> viewer,
+		    osg::ref_ptr<OpenVRDevice> openvrDevice,
+		    osg::ref_ptr<OpenVRSwapCallback> swapCallback);
+#endif // HAVE_OPENVR
 };
 
 class CameraGroup : public osg::Referenced
@@ -292,12 +303,6 @@ public:
     void setZNear(float f) { _zNear = f; }
     void setZFar(float f) { _zFar = f; }
     void setNearField(float f) { _nearField = f; }
-
-#ifdef HAVE_OPENVR
-    void setupVRCamera(osg::Camera* camera, 
-		    osg::GraphicsContext* gc, 
-		    osg::ref_ptr<OpenVRDevice> openvrDevice);
-#endif // HAVE_OPENVR
 
 protected:
     CameraList _cameras;

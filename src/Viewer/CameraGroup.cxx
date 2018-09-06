@@ -322,6 +322,89 @@ void CameraInfo::updateCameras()
     }
 }
 
+#ifdef HAVE_OPENVR
+void CameraInfo::setupVRCameras(osg::ref_ptr<osgViewer::Viewer> viewer,
+			osg::ref_ptr<OpenVRDevice> openvrDevice,
+			osg::ref_ptr<OpenVRSwapCallback> swapCallback)
+{
+    for (CameraMap::iterator ii = cameras.begin(); ii != cameras.end(); ++ii) {
+	if (ii->second.camera->getRenderTargetImplementation() == osg::Camera::FRAME_BUFFER_OBJECT)
+	{
+	    setupVRCamera(ii->second.camera, viewer, openvrDevice, swapCallback );
+	}
+    }
+}
+
+void CameraInfo::setupVRCamera(osg::Camera* camera,
+			   osg::ref_ptr<osgViewer::Viewer> viewer, 
+			   osg::ref_ptr<OpenVRDevice> openvrDevice,
+			   osg::ref_ptr<OpenVRSwapCallback> swapCallback)
+{
+	// Get GraphicsContext from camera
+	osg::GraphicsContext* gc = camera->getGraphicsContext(); 
+	gc->setSwapCallback(swapCallback);
+
+    	camera->setProjectionMatrix(openvrDevice->projectionMatrixCenter());
+	
+	// Create RTT cameras and attach textures
+    	osg::Vec4 clearColor = camera->getClearColor();
+
+    	osg::observer_ptr<osg::Camera> cameraRTTLeft = 
+		openvrDevice->createRTTCamera(OpenVRDevice::LEFT, 
+				osg::Camera::RELATIVE_RF, clearColor, gc);
+
+    	osg::observer_ptr<osg::Camera> cameraRTTRight = 
+		openvrDevice->createRTTCamera(OpenVRDevice::RIGHT,
+				osg::Camera::RELATIVE_RF, clearColor, gc);
+    	cameraRTTLeft->setName(camera->getName() + "_LeftRTT");
+    	cameraRTTRight->setName(camera->getName() + "_RightRTT");
+
+	// Add RTT cameras as slaves, specifyin offsets for projection
+	viewer->addSlave(cameraRTTLeft.get(),
+		          openvrDevice->projectionOffsetMatrixLeft(),
+			  openvrDevice->viewMatrixLeft(),
+			  true);
+	
+	viewer->addSlave(cameraRTTRight.get(),
+		    	 openvrDevice->projectionOffsetMatrixRight(),
+		    	 openvrDevice->viewMatrixRight(),
+		         true);
+
+	// Find RTT cameras slave indexes (FIXME: is there a better way to do this?)
+	const int numSlaves = viewer->getNumSlaves();
+	int ii = 0;
+	int iRTTFound = 0;
+	int iRTTLeftSlaveIndex = 0;
+	int iRTTRightSlaveIndex = 0;
+	while (ii < numSlaves || iRTTFound < 2)
+	{
+		if ( viewer->getSlave(ii)._camera->getName() == camera->getName() + "_LeftRTT" )
+		{
+			iRTTLeftSlaveIndex = ii;
+			iRTTFound++;
+		} else if ( viewer->getSlave(ii)._camera->getName() == camera->getName() + "_RightRTT" )
+		{
+			iRTTRightSlaveIndex = ii;
+			iRTTFound++;
+		}
+		ii++;
+	}
+
+	// Update RTT callbacks
+	viewer->getSlave(iRTTLeftSlaveIndex)._updateSlaveCallback = 
+		new OpenVRUpdateSlaveCallback(OpenVRUpdateSlaveCallback::LEFT_CAMERA, 
+				openvrDevice.get(),
+				swapCallback.get());
+	viewer->getSlave(iRTTRightSlaveIndex)._updateSlaveCallback = 
+		new OpenVRUpdateSlaveCallback(OpenVRUpdateSlaveCallback::RIGHT_CAMERA, 
+				openvrDevice.get(),
+				swapCallback.get());
+
+	// Disable GraphicsContext for camera since we don't need it anymore
+	camera->setGraphicsContext(nullptr);
+}
+#endif // HAVE_OPENVR
+
 void CameraInfo::resized(double w, double h)
 {
     if (w == 1.0 && h == 1.0)
@@ -802,80 +885,6 @@ void CameraGroup::buildDistortionCamera(const SGPropertyNode* psNode,
 	camera->setName("DistortionCorrectionCamera");
 }
 
-#ifdef HAVE_OPENVR
-void CameraGroup::setupVRCamera(osg::Camera* camera, 
-			   osg::GraphicsContext* gc, 
-			   osg::ref_ptr<OpenVRDevice> openvrDevice)
-{
-    	// Things to do for VR when viewer is realized
-    	osg::ref_ptr<OpenVRRealizeOperation> openvrRealizeOperation = 
-		new OpenVRRealizeOperation(openvrDevice);
-    	_viewer->setRealizeOperation(openvrRealizeOperation.get());
-
-	osg::ref_ptr<OpenVRSwapCallback> swapCallback = new OpenVRSwapCallback(openvrDevice);
-	gc->setSwapCallback(swapCallback);
-
-    	camera->setProjectionMatrix(openvrDevice->projectionMatrixCenter());
-	
-	// Create RTT cameras and attach textures
-    	osg::Vec4 clearColor = camera->getClearColor();
-
-    	osg::observer_ptr<osg::Camera> cameraRTTLeft = 
-		openvrDevice->createRTTCamera(OpenVRDevice::LEFT, 
-					      osg::Camera::RELATIVE_RF, clearColor, gc);
-
-    	osg::observer_ptr<osg::Camera> cameraRTTRight = 
-		openvrDevice->createRTTCamera(OpenVRDevice::RIGHT,
-				   		osg::Camera::RELATIVE_RF, clearColor, gc);
-    	cameraRTTLeft->setName(camera->getName() + "_LeftRTT");
-    	cameraRTTRight->setName(camera->getName() + "_RightRTT");
-
-	// Add RTT cameras as slaves, specifyin offsets for projection
-	_viewer->addSlave(cameraRTTLeft.get(),
-		          openvrDevice->projectionOffsetMatrixLeft(),
-			  openvrDevice->viewMatrixLeft(),
-			  true);
-	
-	_viewer->addSlave(cameraRTTRight.get(),
-		    	 openvrDevice->projectionOffsetMatrixRight(),
-		    	 openvrDevice->viewMatrixRight(),
-		         true);
-
-	// Find RTT cameras slave indexes (FIXME: is there a better way to do this?)
-	const int numSlaves = _viewer->getNumSlaves();
-	int ii = 0;
-	int iRTTFound = 0;
-	int iRTTLeftSlaveIndex = 0;
-	int iRTTRightSlaveIndex = 0;
-	while (ii < numSlaves || iRTTFound < 2)
-	{
-		if ( _viewer->getSlave(ii)._camera->getName() == camera->getName() + "_LeftRTT" )
-		{
-			iRTTLeftSlaveIndex = ii;
-			iRTTFound++;
-		} else if ( _viewer->getSlave(ii)._camera->getName() == camera->getName() + "_RightRTT" )
-		{
-			iRTTRightSlaveIndex = ii;
-			iRTTFound++;
-		}
-		ii++;
-	}
-
-	// Update RTT callbacks
-	_viewer->getSlave(iRTTLeftSlaveIndex)._updateSlaveCallback = 
-		new OpenVRUpdateSlaveCallback(OpenVRUpdateSlaveCallback::LEFT_CAMERA, 
-				openvrDevice.get(),
-				swapCallback.get());
-	_viewer->getSlave(iRTTRightSlaveIndex)._updateSlaveCallback = 
-		new OpenVRUpdateSlaveCallback(OpenVRUpdateSlaveCallback::RIGHT_CAMERA, 
-				openvrDevice.get(),
-				swapCallback.get());
-
-	// Disable GraphicsContext for camera since we don't need it anymore
-	camera->setGraphicsContext(nullptr);
-}
-#endif // HAVE_OPENVR
-
 CameraInfo* CameraGroup::buildCamera(SGPropertyNode* cameraNode)
 {
 	WindowBuilder *wBuild = WindowBuilder::getWindowBuilder();
@@ -1118,13 +1127,6 @@ CameraInfo* CameraGroup::buildCamera(SGPropertyNode* cameraNode)
 
 	info->viewportListener = new CameraViewportListener(info, viewportNode, window->gc->getTraits());
 	info->updateCameras();
-
-#ifdef HAVE_OPENVR
-	if (globals->useVR() && info->name == "VRC")
-	{
-		setupVRCamera(camera, window->gc, globals->getOpenVRDevice());
-	}
-#endif // HAVE_OPENVR
 
 	// Distortion camera needs the viewport which is created by addCamera().
 	if (psNode) {
