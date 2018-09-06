@@ -340,29 +340,6 @@ int fgOSMainLoop()
     viewer->setReleaseContextAtEndOfFrameHint(false);
     if (!viewer->isRealized()) {
         viewer->realize();
-#ifdef HAVE_OPENVR
-    	// Things to do for VR when viewer is realized
-	if ( globals->useVR() ) {
-    	    osg::ref_ptr<OpenVRRealizeOperation> openvrRealizeOperation = 
-		new OpenVRRealizeOperation(globals->getOpenVRDevice());
-    	    viewer->setRealizeOperation(openvrRealizeOperation.get());
-	/*	
-	    if ( !(openvrRealizeOperation->realized()) ) 
-	    {
-		SG_LOG(SG_GENERAL, SG_WARN, 
-	 	    "Unable to setup OpenVRRealizeOperation");
-	    } else {
-	*/
-		osg::ref_ptr<OpenVRSwapCallback> swapCallback =
-			new OpenVRSwapCallback(globals->getOpenVRDevice());
-
-		globals->get_renderer()->setupVR(viewer, 
-				globals->getOpenVRDevice(), swapCallback);
-	/*
-	    }
-	*/
-	}
-#endif // HAVE_OPENVR
     }
 
     while (!viewer->done()) {
@@ -372,6 +349,24 @@ int fgOSMainLoop()
 
         globals->get_renderer()->update();
         viewer->frame( globals->get_sim_time_sec() );
+#ifdef HAVE_OPENVR
+    	// Things to do for VR when viewer is realized
+	if ( globals->useVR() && !(globals->isVRReady()) ) 
+	{
+
+    	    osg::ref_ptr<OpenVRRealizeOperation> openvrRealizeOperation = 
+		new OpenVRRealizeOperation(globals->getOpenVRDevice());
+
+    	    viewer->setRealizeOperation(openvrRealizeOperation.get());
+
+		osg::ref_ptr<OpenVRSwapCallback> swapCallback =
+			new OpenVRSwapCallback(globals->getOpenVRDevice());
+
+		globals->get_renderer()->setupVR(viewer, 
+				globals->getOpenVRDevice(), swapCallback);
+		globals->setVRReady(true);
+	}
+#endif // HAVE_OPENVR
     }
 
     return status;
