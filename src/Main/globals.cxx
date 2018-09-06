@@ -154,6 +154,10 @@ FGGlobals *globals = NULL;
 FGGlobals::FGGlobals() :
 #ifndef FG_TESTLIB
     renderer( new FGRenderer ),
+#ifdef HAVE_OPENVR
+    _useVR(false),
+    _isVRReady(false),
+#endif // HAVE_OPENVR
 #endif
     subsystem_mgr( new SGSubsystemMgr ),
     event_mgr( new SGEventMgr ),
@@ -165,9 +169,6 @@ FGGlobals::FGGlobals() :
     channel_options_list( NULL ),
     initial_waypoints( NULL ),
     channellist( NULL ),
-#ifdef HAVE_OPENVR
-    _useVR(false),
-#endif // HAVE_OPENVR
     haveUserSettings(false)
 {
     SGPropertyNode* root = new SGPropertyNode;
@@ -179,6 +180,8 @@ FGGlobals::FGGlobals() :
     resMgr->addProvider(new CurrentAircraftDirProvider());
     resMgr->addProvider(new flightgear::addons::ResourceProvider());
     initProperties();
+
+#ifndef FG_TESTLIB
 #ifdef HAVE_OPENVR
     if (!OpenVRDevice::hmdPresent())
     {
@@ -211,6 +214,7 @@ FGGlobals::FGGlobals() :
     }
 
 #endif // HAVE_OPENVR
+#endif // ndef(FG_TESTLIB)
 }
 
 void FGGlobals::initProperties()

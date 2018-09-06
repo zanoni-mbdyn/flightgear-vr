@@ -162,11 +162,13 @@ private:
 
     SGSharedPtr<simgear::pkg::Root> _packageRoot;
 
+#ifndef FG_TESTLIB
 #ifdef HAVE_OPENVR
     bool _useVR;
+    bool _isVRReady;
     osg::ref_ptr<OpenVRDevice> _openvrDevice;
 #endif // HAVE_OPENVR
-
+#endif // ndef(FG_TESTLIB)
 public:
 
     FGGlobals();
@@ -416,10 +418,14 @@ public:
     simgear::pkg::Root* packageRoot();
     void setPackageRoot(const SGSharedPtr<simgear::pkg::Root>& p);
 
+#ifndef FG_TESTLIB
 #ifdef HAVE_OPENVR
     const osg::ref_ptr<OpenVRDevice> getOpenVRDevice(void) {return _openvrDevice;}; 
     bool useVR(void) {return _useVR;};
+    bool isVRReady(void) {return _isVRReady;};
+    void setVRReady(bool isVRReady) {_isVRReady = isVRReady;};
 #endif // HAVE_OPENVR
+#endif // ndef(FG_TESTLIB)
 };
 
 
