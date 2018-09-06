@@ -807,6 +807,11 @@ void CameraGroup::setupVRCamera(osg::Camera* camera,
 			   osg::GraphicsContext* gc, 
 			   osg::ref_ptr<OpenVRDevice> openvrDevice)
 {
+    	// Things to do for VR when viewer is realized
+    	osg::ref_ptr<OpenVRRealizeOperation> openvrRealizeOperation = 
+		new OpenVRRealizeOperation(openvrDevice);
+    	_viewer->setRealizeOperation(openvrRealizeOperation.get());
+
 	osg::ref_ptr<OpenVRSwapCallback> swapCallback = new OpenVRSwapCallback(openvrDevice);
 	gc->setSwapCallback(swapCallback);
 
@@ -1114,8 +1119,11 @@ CameraInfo* CameraGroup::buildCamera(SGPropertyNode* cameraNode)
 	info->viewportListener = new CameraViewportListener(info, viewportNode, window->gc->getTraits());
 
 #ifdef HAVE_OPENVR
-	if (globals->useVR() && camera->getName() == "VRC")
+	if (globals->useVR() && info->name == "VRC")
 	{
+		camera->setViewport(0, 0, 
+			window->gc->getTraits()->width, 
+			window->gc->getTraits()->height);
 		setupVRCamera(camera, window->gc, globals->getOpenVRDevice());
 	}
 #endif // HAVE_OPENVR

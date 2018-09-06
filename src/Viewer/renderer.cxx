@@ -119,10 +119,6 @@
 #include <Viewer/PUICamera.hxx>
 #endif
 
-#if defined(HAVE_OPENVR)
-#include <VR/openvrdevice.hxx>
-#endif
-
 using namespace osg;
 using namespace simgear;
 using namespace flightgear;
@@ -438,15 +434,6 @@ FGRenderer::preinit( void )
     // is completely visible. We reset this value when the splash screen
     // is fading out.
     fgSetBool("/sim/menubar/overlap-hide", true);
-
-#ifdef HAVE_OPENVR
-    if (globals->useVR()) {
-    	// Things to do for VR when viewer is realized
-    	osg::ref_ptr<OpenVRRealizeOperation> openvrRealizeOperation = 
-		new OpenVRRealizeOperation(globals->getOpenVRDevice());
-    	viewer->setRealizeOperation(openvrRealizeOperation.get());
-    }
-#endif // HAVE_OPENVR
 }
 
 class ShadowMapSizeListener : public SGPropertyChangeListener {

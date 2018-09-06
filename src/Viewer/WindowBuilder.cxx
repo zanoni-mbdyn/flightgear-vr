@@ -330,15 +330,17 @@ GraphicsWindow* WindowBuilder::buildWindow(const SGPropertyNode* winNode)
     if (!windowName.empty()) {
         // look for an existing window and return that
         result = wsa->findWindow(windowName);
-        if (result)
+        if (result) 
+	{
             return result;
 #ifdef HAVE_OPENVR
-    } else if (windowName == "VR") {
-	    if ( globals->useVR() ) {
-		    traits = makeOpenVRTraits(globals->getOpenVRDevice());
-		    traits->windowName = windowName;
-	    }
+        } else if (windowName == "VR") {
+	    	if ( globals->useVR() ) {
+		    	traits = makeOpenVRTraits(globals->getOpenVRDevice());
+		    	traits->windowName = windowName;
+	    	}
 #endif // HAVE_OPENVR
+    	}
     }
     int traitsSet = setFromProperty(traits->hostName, winNode, "host-name");
     traitsSet |= setFromProperty(traits->displayNum, winNode, "display");
