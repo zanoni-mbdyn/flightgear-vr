@@ -1117,17 +1117,15 @@ CameraInfo* CameraGroup::buildCamera(SGPropertyNode* cameraNode)
 	// of mouse events are somewhat bizzare.
 
 	info->viewportListener = new CameraViewportListener(info, viewportNode, window->gc->getTraits());
+	info->updateCameras();
 
 #ifdef HAVE_OPENVR
 	if (globals->useVR() && info->name == "VRC")
 	{
-		camera->setViewport(0, 0, 
-			window->gc->getTraits()->width, 
-			window->gc->getTraits()->height);
 		setupVRCamera(camera, window->gc, globals->getOpenVRDevice());
 	}
 #endif // HAVE_OPENVR
-	info->updateCameras();
+
 	// Distortion camera needs the viewport which is created by addCamera().
 	if (psNode) {
 		info->flags = info->flags | VIEW_ABSOLUTE;
