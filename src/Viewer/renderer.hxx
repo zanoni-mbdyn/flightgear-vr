@@ -12,11 +12,6 @@
 
 #include "renderingpipeline.hxx"
 
-#if defined(HAVE_OPENVR)
-#include <VR/openvrdevice.hxx>
-#include <VR/openvrupdateslavecallback.hxx>
-#endif
-
 namespace osg
 {
 class Camera;

@@ -342,7 +342,12 @@ void OpenVRDevice::createRenderBuffers(osg::ref_ptr<osg::State> state)
 
 	for (int i = 0; i < 2; i++)
 	{
-		m_textureBuffer[i] = new OpenVRTextureBuffer(state, renderWidth, renderHeight, m_samples);
+		if ( !(m_textureBuffer[i] = new OpenVRTextureBuffer(state, renderWidth, renderHeight, m_samples)) )
+		{
+			osg::notify(osg::NOTICE) << "OpenVRDevice::createRenderBuffers():" 
+				<< "Creation of render buffer " << i << " failed.";
+		}
+		
 	}
 
 	int mirrorWidth = 800;
