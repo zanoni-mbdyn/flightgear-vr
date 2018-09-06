@@ -59,13 +59,13 @@ const string WindowBuilder::defaultWindowName("FlightGear");
 // we run another GUI.
 bool WindowBuilder::poseAsStandaloneApp = true;
 
-#if defined (HAVE_OPENVR)
+#if 0
 void WindowBuilder::initWindowBuilder(bool stencil, osg::ref_ptr<OpenVRDevice> openvrDevice)
 {
 	windowBuilder = new WindowBuilder(stencil, openvrDevice);
 }
 
-WindowBuilder::WindowBuilder(bool stencil, osg::ref_ptr<OpenVRDevice> openvrDevice)
+void WindowBuilder::WindowBuilder(bool stencil, osg::ref_ptr<OpenVRDevice> openvrDevice)
 {
 #if defined (HAVE_QT)
     usingQtGraphicsWindow = fgGetBool("/sim/rendering/graphics-window-qt", false);
@@ -82,7 +82,13 @@ void WindowBuilder::makeDefaultTraits(bool stencil, osg::ref_ptr<OpenVRDevice> o
 	    defaultTraits->stencil = 8;
 	}
 }
-
+#endif
+#ifdef HAVE_OPENVR
+osg::GraphicsContext::Traits* WindowBuilder::makeOpenVRTraits(osg::ref_ptr<OpenVRDevice> openvrDevice)
+{
+	return openvrDevice->graphicsContextTraits();
+	
+}
 #endif // HAVE_OPENVR
 
 void WindowBuilder::initWindowBuilder(bool stencil)
@@ -318,13 +324,22 @@ GraphicsWindow* WindowBuilder::buildWindow(const SGPropertyNode* winNode)
     else if (winNode->hasChild("name"))
         windowName = winNode->getStringValue("name");
     GraphicsWindow* result = 0;
+
+    auto traits = new GraphicsContext::Traits(*defaultTraits);
+
     if (!windowName.empty()) {
         // look for an existing window and return that
         result = wsa->findWindow(windowName);
         if (result)
             return result;
+#ifdef HAVE_OPENVR
+    } else if (windowName == "VR") {
+	    if ( globals->useVR() ) {
+		    traits = makeOpenVRTraits(globals->getOpenVRDevice());
+		    traits->windowName = windowName;
+	    }
+#endif // HAVE_OPENVR
     }
-    auto traits = new GraphicsContext::Traits(*defaultTraits);
     int traitsSet = setFromProperty(traits->hostName, winNode, "host-name");
     traitsSet |= setFromProperty(traits->displayNum, winNode, "display");
     traitsSet |= setFromProperty(traits->screenNum, winNode, "screen");
@@ -357,7 +372,6 @@ GraphicsWindow* WindowBuilder::buildWindow(const SGPropertyNode* winNode)
             data->isPrimaryWindow = drawGUI;
         }
 #endif
- 
         GraphicsContext* gc = GraphicsContext::createGraphicsContext(traits);
         if (gc) {
             GraphicsWindow* window = WindowSystemAdapter::getWSA()

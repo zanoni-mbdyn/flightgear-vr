@@ -71,6 +71,10 @@
 #include "fg_props.hxx"
 #include "fg_io.hxx"
 
+#if defined(HAVE_OPENVR)
+#include <VR/openvrdevice.hxx>
+#endif // HAVE_OPENVR
+
 class AircraftResourceProvider : public simgear::ResourceProvider
 {
 public:
@@ -161,6 +165,9 @@ FGGlobals::FGGlobals() :
     channel_options_list( NULL ),
     initial_waypoints( NULL ),
     channellist( NULL ),
+#ifdef HAVE_OPENVR
+    _useVR(false),
+#endif // HAVE_OPENVR
     haveUserSettings(false)
 {
     SGPropertyNode* root = new SGPropertyNode;
@@ -172,6 +179,38 @@ FGGlobals::FGGlobals() :
     resMgr->addProvider(new CurrentAircraftDirProvider());
     resMgr->addProvider(new flightgear::addons::ResourceProvider());
     initProperties();
+#ifdef HAVE_OPENVR
+    if (!OpenVRDevice::hmdPresent())
+    {
+	    SG_LOG(SG_GENERAL, SG_WARN, "VR enabled during compilation but no HMD device was found.\n"
+	    "VR support will be disabled.\n"
+	    );
+    } 
+    else
+    {
+	    SG_LOG(SG_GENERAL, SG_INFO, "VR enabled during compilation: found HMD device\n");
+	    
+	    // Open the HMD
+	    SG_LOG(SG_GENERAL, SG_INFO, "Initializing HMD device\n");
+	    float nearClip = 0.01f;
+	    float farClip = 10000.0f;
+	    float worldUnitsPerMetre = 1.0f;
+	    int samples = 4;
+	    
+	    _openvrDevice = new OpenVRDevice(nearClip, farClip, worldUnitsPerMetre, samples);
+	    if (!_openvrDevice->hmdInitialized())
+	    {
+	    	SG_LOG(SG_GENERAL, SG_WARN, "Unable to initialize HMD device.\n"
+	    	"VR support will be disabled.\n"
+	    	);
+	    } 
+	    else 
+	    {
+		_useVR = true;
+	    }
+    }
+
+#endif // HAVE_OPENVR
 }
 
 void FGGlobals::initProperties()
@@ -202,6 +241,17 @@ FGGlobals::~FGGlobals()
     // scene-graph pieces
 #ifndef FG_TESTLIB
     osg::ref_ptr<osgViewer::Viewer> vw(renderer->getViewer());
+#ifdef HAVE_OPENVR
+    if (_useVR) {
+	    osgViewer::ViewerBase::Contexts gcs;
+	    vw->getContexts(gcs);
+	    osgViewer::ViewerBase::Contexts::iterator it;
+	    for(it = gcs.begin(); it != gcs.end(); it++)
+	    {
+	    	_openvrDevice->shutdown(*it);
+	    }
+    }
+#endif // HAVE_OPENVR
     if (vw) {
         // https://code.google.com/p/flightgear-bugs/issues/detail?id=1291
         // explicitly stop trheading before we delete the renderer or
@@ -209,7 +259,7 @@ FGGlobals::~FGGlobals()
         // GraphicsContext)
         vw->stopThreading();
     }
-#endif
+#endif // ndef(FG_TESTLIB)
     subsystem_mgr->shutdown();
     subsystem_mgr->unbind();
 

@@ -35,6 +35,7 @@
 
 #if defined (HAVE_OPENVR)
 #include <VR/openvrdevice.hxx>
+#include <VR/openvrupdateslavecallback.hxx>
 #endif // HAVE_OPENVR
 
 typedef std::vector<std::string> string_list;
@@ -160,6 +161,12 @@ private:
     SGPropertyChangeListenerVec _listeners_to_cleanup;
 
     SGSharedPtr<simgear::pkg::Root> _packageRoot;
+
+#ifdef HAVE_OPENVR
+    bool _useVR;
+    osg::ref_ptr<OpenVRDevice> _openvrDevice;
+#endif // HAVE_OPENVR
+
 public:
 
     FGGlobals();
@@ -408,6 +415,11 @@ public:
 
     simgear::pkg::Root* packageRoot();
     void setPackageRoot(const SGSharedPtr<simgear::pkg::Root>& p);
+
+#ifdef HAVE_OPENVR
+    const osg::ref_ptr<OpenVRDevice> getOpenVRDevice(void) {return _openvrDevice;}; 
+    bool useVR(void) {return _useVR;};
+#endif // HAVE_OPENVR
 };
 
 

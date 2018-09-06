@@ -31,6 +31,10 @@
 #include <osg/TexGen>
 #include <osgUtil/RenderBin>
 
+#if defined (HAVE_OPENVR)
+#include <VR/openvrdevice.hxx>
+#endif // HAVE_OPENVR
+
 // For osgUtil::LineSegmentIntersector::Intersections, which is a typedef.
 #include <osgUtil/LineSegmentIntersector>
 namespace osg
@@ -288,6 +292,13 @@ public:
     void setZNear(float f) { _zNear = f; }
     void setZFar(float f) { _zFar = f; }
     void setNearField(float f) { _nearField = f; }
+
+#ifdef HAVE_OPENVR
+    void setupVRCamera(osg::Camera* camera, 
+		    osg::GraphicsContext* gc, 
+		    osg::ref_ptr<OpenVRDevice> openvrDevice);
+#endif // HAVE_OPENVR
+
 protected:
     CameraList _cameras;
     osg::ref_ptr<osgViewer::Viewer> _viewer;

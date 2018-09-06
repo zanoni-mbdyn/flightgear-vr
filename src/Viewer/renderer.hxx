@@ -126,15 +126,8 @@ FGRenderer();
 
     SGSky* getSky() const { return _sky; }
 
-	void setPlanes( double zNear, double zFar );
-
-#ifdef HAVE_OPENVR
-	const osg::ref_ptr<OpenVRDevice> getOpenVRDevice(void) {return _openvrDevice;};
-	void setupVR(void);
-	bool useVR(void) {return _useVR;};
-	void setVRReady(bool isReady) {_isVRReady = isReady;};
-	bool getVRReady(void) {return _isVRReady;};
-#endif // HAVE_OPENVR
+    void setPlanes( double zNear, double zFar );
+    void printCameras(void);
 
 protected:
     osg::ref_ptr<osgViewer::Viewer> viewer;
@@ -165,14 +158,7 @@ protected:
     float _cascadeFar[4];
     bool _useColorForDepth;
 
-#ifdef HAVE_OPENVR
-    bool _useVR;
-    bool _isVRReady;
-    osg::ref_ptr<OpenVRDevice> _openvrDevice;
-    void setupVRCamera(osg::Camera* camera, 
-		       osg::GraphicsContext* gc, 
-		       osg::ref_ptr<OpenVRSwapCallback> swapCallback);
-#endif // HAVE_OPENVR
+    bool _printCameras;
 
     typedef std::vector<SGPropertyChangeListener*> SGPropertyChangeListenerVec;
     SGPropertyChangeListenerVec _listeners;

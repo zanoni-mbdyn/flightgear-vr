@@ -272,16 +272,7 @@ void fgOSOpenWindow(bool stencil)
       viewer->setThreadingModel(osgViewer::Viewer::CullThreadPerCameraDrawThreadPerContext);
     else
       viewer->setThreadingModel(osgViewer::Viewer::SingleThreaded);
-#if defined (HAVE_OPENVR)
-    if (globals->get_renderer()->useVR()) {
-	WindowBuilder::initWindowBuilder(stencil, globals->get_renderer()->getOpenVRDevice());
-    } else {
-#endif // HAVE_OPENVR
     WindowBuilder::initWindowBuilder(stencil);
-#if defined (HAVE_OPENVR)
-    }
-#endif // HAVE_OPENVR
-
     CameraGroup::buildDefaultGroup(viewer.get());
 
     FGEventHandler* manipulator = globals->get_renderer()->getEventHandler();

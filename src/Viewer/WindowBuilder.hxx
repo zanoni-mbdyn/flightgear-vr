@@ -44,7 +44,7 @@ public:
      * @param stencil whether windows should allocate stencil planes
      */
     static void initWindowBuilder(bool stencil);
-#if defined (HAVE_OPENVR)
+#if 0
     static void initWindowBuilder(bool stencil, osg::ref_ptr<OpenVRDevice> openvrDevice);
 #endif
     /** Get the singleton window builder
@@ -75,8 +75,9 @@ protected:
     
     void makeDefaultTraits(bool stencil);
 #if defined (HAVE_OPENVR)
-    WindowBuilder(bool stencil, osg::ref_ptr<OpenVRDevice> openvrDevice);
-    void makeDefaultTraits(bool stencil, osg::ref_ptr<OpenVRDevice> openvrDevice);
+    // WindowBuilder(bool stencil, osg::ref_ptr<OpenVRDevice> openvrDevice);
+    // void makeDefaultTraits(bool stencil, osg::ref_ptr<OpenVRDevice> openvrDevice);
+    osg::GraphicsContext::Traits* makeOpenVRTraits(osg::ref_ptr<OpenVRDevice> openvrDevice);
 #endif // HAVE_OPENVR
     
     osg::ref_ptr<osg::GraphicsContext::Traits> defaultTraits;
