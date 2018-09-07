@@ -361,7 +361,6 @@ FGRenderer::FGRenderer() :
     _fogDensity( new osg::Uniform( "fg_FogDensity", 0.0001f ) ),
     _shadowNumber( new osg::Uniform( "fg_ShadowNumber", (int)4 ) ),
     _shadowDistances( new osg::Uniform( "fg_ShadowDistances", osg::Vec4f(5.0, 50.0, 500.0, 5000.0 ) ) ),
-    _printCameras(true),
     _depthInColor( new osg::Uniform( "fg_DepthInColor", false ) )
 {
     // it's not the real root, whatever that means
@@ -521,6 +520,9 @@ FGRenderer::init( void )
     _xsize         = fgGetNode("/sim/startup/xsize", true);
     _ysize         = fgGetNode("/sim/startup/ysize", true);
     _splash_alpha  = fgGetNode("/sim/startup/splash-alpha", true);
+#ifdef HAVE_OPENVR
+    _done_splash = false;
+#endif // HAVE_OPENVR
 
     _point_sprites        = fgGetNode("/sim/rendering/point-sprites", true);
     _distance_attenuation = fgGetNode("/sim/rendering/distance-attenuation", true);
@@ -1154,19 +1156,6 @@ FGRenderer::buildDeferredFullscreenCamera( flightgear::CameraInfo* info, const F
     return camera;
 }
 
-void FGRenderer::printCameras(void)
-{	 
-    SG_LOG(SG_GENERAL, SG_INFO, "printCameras(): inspecting Default Group");
-    for ( CameraGroup::CameraIterator i = CameraGroup::getDefault()->camerasBegin();
-	  i != CameraGroup::getDefault()->camerasEnd();
-	  ++i )
-	{
-		CameraInfo* info = i->get();
-		SG_LOG(SG_GENERAL, SG_INFO, "-- " << info->name);
-		
-	}
-}
-
 #ifdef HAVE_OPENVR
 void FGRenderer::setupVR(osg::ref_ptr<osgViewer::Viewer> viewer, 
 			 osg::ref_ptr<OpenVRDevice> openvrDevice,
@@ -1180,7 +1169,9 @@ void FGRenderer::setupVR(osg::ref_ptr<osgViewer::Viewer> viewer,
 		CameraInfo* info = i->get();
 		if (info->name == "VRC") {
 			SG_LOG(SG_GENERAL, SG_INFO, "setupVR(): working on camera " << info->name);
-			info->setupVRCameras(viewer, openvrDevice, swapCallback);
+			// const int vrSlaveIndex = info->getMainSlaveIndex;
+			const osg::View::Slave& vrSlave = viewer->getSlave(info->getMainSlaveIndex());
+			info->setupVRCamera(vrSlave._camera, viewer, openvrDevice, swapCallback);
 			SG_LOG(SG_GENERAL, SG_INFO, "setupVR(): done preparing camera " << info->name);
 		}
 			
@@ -1676,10 +1667,11 @@ FGRenderer::update( ) {
 	    _fogDensity->set( float( _updateVisitor->getFogExp2Density() ) );
     }
     
-    if (_printCameras && _splash_alpha->getDoubleValue() == 0.0) {
-	    printCameras();
-	    _printCameras = false;
+#ifdef HAVE_OPENVR
+    if (_splash_alpha->getDoubleValue() == 0.0) {
+	  _done_splash = true;  
     }
+#endif // HAVE_OPENVR
 }
 
 void

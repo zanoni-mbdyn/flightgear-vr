@@ -313,7 +313,6 @@ GraphicsWindow* WindowBuilder::buildWindow(const SGPropertyNode* winNode)
         } else if (windowName == "VR") {
 	    	if ( globals->useVR() ) {
 		    	traits = makeOpenVRTraits(globals->getOpenVRDevice());
-		    	traits->windowName = windowName;
 	    	}
 #endif // HAVE_OPENVR
     	}
@@ -331,7 +330,7 @@ GraphicsWindow* WindowBuilder::buildWindow(const SGPropertyNode* winNode)
     }
     traitsSet |= setFromProperty(traits->x, winNode, "x");
     traitsSet |= setFromProperty(traits->y, winNode, "y");
-    if (!windowName.empty() && windowName != traits->windowName) {
+    if (!windowName.empty() && (windowName != traits->windowName)) {
         traits->windowName = windowName;
         traitsSet = 1;
     } else if (traitsSet) {

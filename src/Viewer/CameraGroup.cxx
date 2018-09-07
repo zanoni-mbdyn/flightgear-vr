@@ -327,12 +327,16 @@ void CameraInfo::setupVRCameras(osg::ref_ptr<osgViewer::Viewer> viewer,
 			osg::ref_ptr<OpenVRDevice> openvrDevice,
 			osg::ref_ptr<OpenVRSwapCallback> swapCallback)
 {
-    for (CameraMap::iterator ii = cameras.begin(); ii != cameras.end(); ++ii) {
-	if (ii->second.camera->getRenderTargetImplementation() == osg::Camera::FRAME_BUFFER_OBJECT)
-	{
-	    setupVRCamera(ii->second.camera, viewer, openvrDevice, swapCallback );
+	osg::Camera* camera = nullptr;
+	if ( (camera = getCamera("VRC")) ) {
+		if (camera->getGraphicsContext()->getTraits()->windowName == "VR") {
+			setupVRCamera(camera, viewer, openvrDevice, swapCallback);
+		} else {
+			SG_LOG(SG_GENERAL, SG_WARN, "CameraInfo::setupVRCameras(): unable to find \"VR\" window.");
+		}
+	} else {
+		SG_LOG(SG_GENERAL, SG_WARN, "CameraInfo::setupVRCameras(): Unable to find \"VRC\" camera.");
 	}
-    }
 }
 
 void CameraInfo::setupVRCamera(osg::Camera* camera,
@@ -472,6 +476,11 @@ osg::Texture2D* CameraInfo::getBuffer(const std::string& k) const
 int CameraInfo::getMainSlaveIndex() const
 {
     return cameras.find( MAIN_CAMERA )->second.slaveIndex;
+}
+
+osg::Camera* CameraInfo::getMainCamera() const
+{
+	return cameras.find ( MAIN_CAMERA )->second;
 }
 
 void CameraInfo::setMatrices(osg::Camera* c)
@@ -1124,7 +1133,7 @@ CameraInfo* CameraGroup::buildCamera(SGPropertyNode* cameraNode)
 	// If a viewport isn't set on the camera, then it's hard to dig it
 	// out of the SceneView objects in the viewer, and the coordinates
 	// of mouse events are somewhat bizzare.
-
+	
 	info->viewportListener = new CameraViewportListener(info, viewportNode, window->gc->getTraits());
 	info->updateCameras();
 
@@ -1133,6 +1142,7 @@ CameraInfo* CameraGroup::buildCamera(SGPropertyNode* cameraNode)
 		info->flags = info->flags | VIEW_ABSOLUTE;
 		buildDistortionCamera(psNode, camera);
 	}
+
 	return info;
 }
 
