@@ -1142,7 +1142,7 @@ CameraInfo* CameraGroup::buildCamera(SGPropertyNode* cameraNode)
 }
 
 #ifdef HAVE_OPENVR
-CameraInfo* CameraGroup::buildRTTCamera(Camera* parentCamera, 
+CameraInfo* CameraGroup::buildVRRTTCamera(Camera* parentCamera, 
 		osg::ref_ptr<osg::GraphicsContext> gc,
 		OpenVRDevice::Eye eye)
 {
@@ -1181,15 +1181,18 @@ CameraInfo* CameraGroup::buildRTTCamera(Camera* parentCamera,
 	cameraRTT->setFinalDrawCallback(new OpenVRPostDrawCallback(cameraRTT, buffer));
 
 	// FG stuff
-	CameraInfo* info = globals->get_renderer()->buildRenderingPipeline(this, 
-			DO_INTERSECTION_TEST, cameraRTT, vOff, pOff, gc, false);
-	info->name = cameraRTT->getName();
-	info->isVRRTTCamera = true;
+	CameraInfo* info;
 	if (eye == OpenVRDevice::LEFT) {
-		info->vrCameraType = OpenVRUpdateSlaveCallback::CameraType::LEFT_CAMERA;
+		CameraInfo* info = globals->get_renderer()->buildVRRenderingPipeline(this, 
+			DO_INTERSECTION_TEST, cameraRTT, vOff, pOff, gc, false, 
+			OpenVRUpdateSlaveCallback::CameraType::LEFT_CAMERA);
 	} else {
-		info->vrCameraType = OpenVRUpdateSlaveCallback::CameraType::RIGHT_CAMERA;
+		CameraInfo* info = globals->get_renderer()->buildVRRenderingPipeline(this, 
+			DO_INTERSECTION_TEST, cameraRTT, vOff, pOff, gc, false,
+			OpenVRUpdateSlaveCallback::CameraType::RIGHT_CAMERA);
 	}	
+	
+	info->name = cameraRTT->getName();
 	info->physicalWidth = buffer->textureWidth();
 	info->physicalHeight = buffer->textureHeight();
 	info->bezelHeightTop = 0.;

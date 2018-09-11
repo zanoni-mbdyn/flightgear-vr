@@ -99,9 +99,6 @@ struct CameraInfo : public osg::Referenced
           physicalWidth(0), physicalHeight(0), bezelHeightTop(0),
           bezelHeightBottom(0), bezelWidthLeft(0), bezelWidthRight(0),
 	  relativeCameraParent(~0u),
-#ifdef HAVE_OPENVR
-	  isVRRTTCamera(false),
-#endif // HAVE_OPENVR 
           bufferSize( new osg::Uniform("fg_BufferSize", osg::Vec2f() ) ),
           projInverse( new osg::Uniform( "fg_ProjectionMatrixInverse", osg::Matrixf() ) ),
           viewInverse( new osg::Uniform( "fg_ViewMatrixInverse",osg::Matrixf() ) ),
@@ -149,12 +146,6 @@ struct CameraInfo : public osg::Referenced
     /** The parent camera for relative camera configurations.
      */
     unsigned relativeCameraParent;
-
-#ifdef HAVE_OPENVR
-    // Signals if this is an RTT camera for HMD
-    bool isVRRTTCamera;
-    OpenVRUpdateSlaveCallback::CameraType vrCameraType;
-#endif 
 
     /** the camera objects
      */
@@ -313,7 +304,7 @@ public:
     void setZFar(float f) { _zFar = f; }
     void setNearField(float f) { _nearField = f; }
 #ifdef HAVE_OPENVR
-    CameraInfo* buildRTTCamera(osg::Camera* parentCamera,
+    CameraInfo* buildVRRTTCamera(osg::Camera* parentCamera,
 		    osg::ref_ptr<osg::GraphicsContext> gc,
 		    OpenVRDevice::Eye eye);
 #endif // HAVE_OPENVR

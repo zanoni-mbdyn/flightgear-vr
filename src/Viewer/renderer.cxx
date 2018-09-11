@@ -618,6 +618,24 @@ FGRenderer::buildRenderingPipeline(CameraGroup* cgroup, unsigned flags, Camera* 
 	}
 }
 
+#ifdef HAVE_OPENVR
+CameraInfo*
+FGRenderer::buildVRRenderingPipeline(CameraGroup* cgroup, unsigned flags, Camera* camera,
+                                   const Matrix& view,
+                                   const Matrix& projection,
+				   osg::GraphicsContext* gc,
+                                   bool useMasterSceneData,
+				   const OpenVRUpdateSlaveCallback::CameraType vrCameraType)
+{
+	CameraInfo* info = 0;
+	if (_classicalRenderer) {
+		throw sg_exception("VR unsupported with classical renderer! Please enable Rembrandt");
+	} else if ( flags & (CameraGroup::GUI | CameraGroup::ORTHO) == 0) {
+		info = buildDeferredVRPipeline(cgroup, flags, camera, view, projection, gc, vrCameraType);
+	}
+}
+#endif
+
 CameraInfo*
 FGRenderer::buildClassicalPipeline(CameraGroup* cgroup, unsigned flags, osg::Camera* camera,
                                 const osg::Matrix& view,
@@ -1101,6 +1119,19 @@ FGRenderer::buildDeferredPipeline(CameraGroup* cgroup, unsigned flags, osg::Came
     return buildCameraFromRenderingPipeline(_pipeline, cgroup, flags, camera, view, projection, gc);
 }
 
+#ifdef HAVE_OPENVR
+CameraInfo*
+FGRenderer::buildDeferredVRPipeline(CameraGroup* cgroup, unsigned flags, osg::Camera* camera,
+                                    const osg::Matrix& view,
+                                    const osg::Matrix& projection,
+                                    osg::GraphicsContext* gc,
+				    const OpenVRUpdateSlaveCallback::CameraType vrCameraType)
+{
+    return buildVRCameraFromRenderingPipeline(_pipeline, cgroup, flags, camera, view, projection, gc, vrCameraType);
+}
+
+#endif // HAVE_OPENVR
+
 osg::Camera* 
 FGRenderer::buildDeferredFullscreenCamera( flightgear::CameraInfo* info, const FGRenderingPipeline::Pass* pass )
 {
@@ -1262,13 +1293,6 @@ FGRenderer::buildStage(CameraInfo* info,
 
     if (needOffsets) {
         cgroup->getViewer()->addSlave(camera, projection, view, false);
-#ifdef HAVE_OPENVR
-	if ( globals->useVR() && info->isVRRTTCamera) {
-	    osg::View::Slave& slave = viewer->getSlave(viewer->getNumSlaves() - 1);
-	    slave._updateSlaveCallback =  new OpenVRUpdateSlaveCallback(info->vrCameraType,
-			    			globals->getOpenVRDevice());
-	}
-#endif // HAVE_OPENVR
     } else {
         cgroup->getViewer()->addSlave(camera, false);
     }
@@ -1278,6 +1302,60 @@ FGRenderer::buildStage(CameraInfo* info,
         info->addCamera( stage->type, camera, slaveIndex, true );
     info->getRenderStageInfo(stage->name).slaveIndex = slaveIndex;
 }
+
+#ifdef HAVE_OPENVR
+void
+FGRenderer::buildVRStage(CameraInfo* info,
+		FGRenderingPipeline::Stage* stage,
+		CameraGroup* cgroup,
+		osg::Camera* mainCamera,
+		const osg::Matrix& view, const osg::Matrix& projection, osg::GraphicsContext* gc,
+		const OpenVRUpdateSlaveCallback::CameraType vrCameraType)
+{
+    if (!stage->valid()) {
+	return;
+    }
+
+    osg::ref_ptr<osg::Camera> camera;
+    bool needOffsets = false;
+    if (stage->type == "geometry") {
+  	camera = buildDeferredGeometryCamera(info, gc, stage->name, stage->attachments);
+	needOffsets = true;
+    } else if (stage->type == "lighting" ) {
+	camera = buildDeferredLightingCamera(info, gc, stage);
+	needOffsets = true;
+    } else if (stage->type == "shadow") {
+	camera = buildDeferredShadowCamera(info, gc, stage->name, stage->attachments);
+    } else if (stage->type == "fullscreen") {
+	camera = buildDeferredFullscreenCamera(info, gc, stage);
+    } else if (stage->type == "display") {
+ 	camera = mainCamera;
+	buildDeferredDisplayCamera(camera, info, stage, gc);
+    } else {
+	throw sg_exception("Stage type is not supported");
+    }
+
+    int slaveIndex = 0;
+    if (needOffsets) {
+        cgroup->getViewer()->addSlave(camera, projection, view, false);
+	slaveIndex = cgroup->getViewer()->getNumSlaves() - 1;
+	cgroup->getViewer()->getSlave(slaveIndex)._updateSlaveCallback = 
+		new OpenVRUpdateSlaveCallback(vrCameraType, globals->getOpenVRDevice());
+    } else {
+        cgroup->getViewer()->addSlave(camera, false);
+    }
+
+    installCullVisitor(camera);
+    
+    if (!slaveIndex) {
+        int slaveIndex = cgroup->getViewer()->getNumSlaves() - 1;
+    }
+    if (stage->type == "display") {
+        info->addCamera( stage->type, camera, slaveIndex, true );
+    }
+    info->getRenderStageInfo(stage->name).slaveIndex = slaveIndex;
+}
+#endif // HAVE_OPENVR
 
 osg::Node*
 FGRenderer::buildLightingSkyCloudsPass(FGRenderingPipeline::Pass* pass)
@@ -1364,12 +1442,6 @@ CameraInfo* FGRenderer::buildCameraFromRenderingPipeline(FGRenderingPipeline* rp
     
     for (size_t i = 0; i < rpipe->stages.size(); ++i) {
         osg::ref_ptr<FGRenderingPipeline::Stage> stage = rpipe->stages[i];
-#ifdef HAVE_OPENVR
-	if ( globals->useVR() )
-	{
-		gc->setSwapCallback(globals->getOpenVRSwapCallback());
-	}
-#endif // HAVE_OPENVR
         buildStage(info, stage, cgroup, camera, view, projection, gc);
     }
 
@@ -1377,6 +1449,29 @@ CameraInfo* FGRenderer::buildCameraFromRenderingPipeline(FGRenderingPipeline* rp
 
     return info;
 }
+
+
+#ifdef HAVE_OPENVR
+CameraInfo* FGRenderer::buildVRCameraFromRenderingPipeline(FGRenderingPipeline* rpipe,
+		CameraGroup* cgroup, unsigned flags, osg::Camera* camera,
+		const osg::Matrix& view, const osg::Matrix& projection, osg::GraphicsContext* gc,
+		const OpenVRUpdateSlaveCallback::CameraType vrCameraType)
+{
+    CameraInfo* info = new CameraInfo(flags);
+    buildBuffers(rpipe, info);
+    
+    for (size_t i = 0; i < rpipe->stages.size(); ++i) {
+        osg::ref_ptr<FGRenderingPipeline::Stage> stage = rpipe->stages[i];
+	gc->setSwapCallback(globals->getOpenVRSwapCallback());
+        buildVRStage(info, stage, cgroup, camera, view, projection, gc, vrCameraType);
+    }
+
+    cgroup->addCamera(info);
+
+    return info;
+
+}
+#endif // HAVE_OPENVR
 
 void FGRenderer::setupRoot()
 {

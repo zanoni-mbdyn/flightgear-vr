@@ -105,7 +105,6 @@ FGRenderer();
                                    const osg::Matrix& projection,
 								   osg::GraphicsContext* gc,
                                    bool useMasterSceneData);
-
 	/**
 	 */
 	flightgear::CameraInfo* buildClassicalPipeline(flightgear::CameraGroup* cgroup, unsigned flags, osg::Camera* camera,
@@ -117,6 +116,26 @@ FGRenderer();
 	 */
 	flightgear::CameraInfo* buildDeferredPipeline(flightgear::CameraGroup* cgroup, unsigned flags, osg::Camera* camera,
                                    const osg::Matrix& view, const osg::Matrix& projection, osg::GraphicsContext* gc);
+
+#ifdef HAVE_OPENVR
+	flightgear::CameraInfo* buildVRRenderingPipeline(flightgear::CameraGroup* cgroup, 
+			unsigned flags, osg::Camera* camera,
+                        const osg::Matrix& view,
+                        const osg::Matrix& projection,
+			osg::GraphicsContext* gc,
+                        bool useMasterSceneData,
+			const OpenVRUpdateSlaveCallback::CameraType vrCameraType);
+
+	flightgear::CameraInfo* buildDeferredVRPipeline(flightgear::CameraGroup* cgroup, 
+			unsigned flags, 
+			osg::Camera* camera,
+                        const osg::Matrix& view, 
+			const osg::Matrix& projection, 
+			osg::GraphicsContext* gc,
+			const OpenVRUpdateSlaveCallback::CameraType vrCameraType);
+
+    
+#endif // HAVE_OPENVR
 
     void updateShadowCamera(const flightgear::CameraInfo* info, const osg::Vec3d& position);
     void updateShadowMapSize(int mapSize);
@@ -172,8 +191,29 @@ protected:
     flightgear::CameraInfo* buildCameraFromRenderingPipeline(FGRenderingPipeline* rpipe, flightgear::CameraGroup* cgroup, unsigned flags, osg::Camera* camera,
                                         const osg::Matrix& view, const osg::Matrix& projection, osg::GraphicsContext* gc);
 
+#ifdef HAVE_OPENVR
+    flightgear::CameraInfo* buildVRCameraFromRenderingPipeline(FGRenderingPipeline* rpipe, 
+		    flightgear::CameraGroup* cgroup, 
+		    unsigned flags, 
+		    osg::Camera* camera,
+                    const osg::Matrix& view, 
+		    const osg::Matrix& projection, 
+		    osg::GraphicsContext* gc,
+		    const OpenVRUpdateSlaveCallback::CameraType vrCameraType);
+#endif // HAVE_OPENVR
     void buildBuffers(FGRenderingPipeline* rpipe, flightgear::CameraInfo* info);
     void buildStage(flightgear::CameraInfo* info, FGRenderingPipeline::Stage* stage, flightgear::CameraGroup* cgroup, osg::Camera* mainCamera, const osg::Matrix& view, const osg::Matrix& projection, osg::GraphicsContext* gc);
+#ifdef HAVE_OPENVR
+    void buildVRStage(flightgear::CameraInfo* info, 
+		    FGRenderingPipeline::Stage* stage, 
+		    flightgear::CameraGroup* cgroup, 
+		    osg::Camera* mainCamera, 
+		    const osg::Matrix& view, 
+		    const osg::Matrix& projection, 
+		    osg::GraphicsContext* gc,
+		    const OpenVRUpdateSlaveCallback::CameraType vrCameraType);
+
+#endif // HAVE_OPENVR
     osg::Node* buildPass(flightgear::CameraInfo* info, FGRenderingPipeline::Pass* pass);
     osg::Node* buildLightingSkyCloudsPass(FGRenderingPipeline::Pass* pass);
     osg::Node* buildLightingLightsPass(flightgear::CameraInfo* info, FGRenderingPipeline::Pass* pass);
