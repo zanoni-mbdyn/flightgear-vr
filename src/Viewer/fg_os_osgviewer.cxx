@@ -383,14 +383,14 @@ void fgOSInit(int* argc, char** argv)
         SG_LOG(SG_GL, SG_INFO, "Using stock OSG implementation of GraphicsWindow");
     }
 #endif
-#ifdef HAVE_OPENVR
-        osg::ref_ptr<OpenVRRealizeOperation> openvrRealizeOperation = 
-		new OpenVRRealizeOperation(globals->getOpenVRDevice());
-
-    	viewer->setRealizeOperation(openvrRealizeOperation.get());
-#endif // HAVE_OPENVR
 
     globals->get_renderer()->init();
+#ifdef HAVE_OPENVR
+    osg::ref_ptr<OpenVRRealizeOperation> openvrRealizeOperation = 
+	new OpenVRRealizeOperation(globals->getOpenVRDevice());
+    
+    viewer->setRealizeOperation(openvrRealizeOperation.get());
+#endif // HAVE_OPENVR
     WindowSystemAdapter::setWSA(new WindowSystemAdapter);
 }
 
