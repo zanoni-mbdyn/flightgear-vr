@@ -1156,31 +1156,6 @@ FGRenderer::buildDeferredFullscreenCamera( flightgear::CameraInfo* info, const F
     return camera;
 }
 
-#ifdef HAVE_OPENVR
-void FGRenderer::setupVR(osg::ref_ptr<osgViewer::Viewer> viewer, 
-			 osg::ref_ptr<OpenVRDevice> openvrDevice,
-			 osg::ref_ptr<OpenVRSwapCallback> swapCallback)
-{ 
-
-    for ( CameraGroup::CameraIterator i = CameraGroup::getDefault()->camerasBegin();
-	  i != CameraGroup::getDefault()->camerasEnd();
-	  ++i )
-	{
-		CameraInfo* info = i->get();
-		if (info->name == "VRC") {
-			SG_LOG(SG_GENERAL, SG_INFO, "setupVR(): working on camera " << info->name);
-			// const int vrSlaveIndex = info->getMainSlaveIndex;
-			const osg::View::Slave& vrSlave = viewer->getSlave(info->getMainSlaveIndex());
-			info->setupVRCamera(vrSlave._camera, viewer, openvrDevice, swapCallback);
-			SG_LOG(SG_GENERAL, SG_INFO, "setupVR(): done preparing camera " << info->name);
-		}
-			
-		
-	}
-
-}
-#endif // HAVE_OPENVR
-
 osg::Camera* 
 FGRenderer::buildDeferredFullscreenCamera( flightgear::CameraInfo* info, osg::GraphicsContext* gc, const FGRenderingPipeline::Stage* stage )
 {
@@ -1285,10 +1260,18 @@ FGRenderer::buildStage(CameraInfo* info,
     } else
         throw sg_exception("Stage type is not supported");
 
-    if (needOffsets)
+    if (needOffsets) {
         cgroup->getViewer()->addSlave(camera, projection, view, false);
-    else
+#ifdef HAVE_OPENVR
+	if ( globals->useVR() && info->isVRRTTCamera) {
+	    osg::View::Slave& slave = viewer->getSlave(viewer->getNumSlaves() - 1);
+	    slave._updateSlaveCallback =  new OpenVRUpdateSlaveCallback(info->vrCameraType,
+			    			globals->getOpenVRDevice());
+	}
+#endif // HAVE_OPENVR
+    } else {
         cgroup->getViewer()->addSlave(camera, false);
+    }
     installCullVisitor(camera);
     int slaveIndex = cgroup->getViewer()->getNumSlaves() - 1;
     if (stage->type == "display")
@@ -1381,6 +1364,12 @@ CameraInfo* FGRenderer::buildCameraFromRenderingPipeline(FGRenderingPipeline* rp
     
     for (size_t i = 0; i < rpipe->stages.size(); ++i) {
         osg::ref_ptr<FGRenderingPipeline::Stage> stage = rpipe->stages[i];
+#ifdef HAVE_OPENVR
+	if ( globals->useVR() )
+	{
+		gc->setSwapCallback(globals->getOpenVRSwapCallback());
+	}
+#endif // HAVE_OPENVR
         buildStage(info, stage, cgroup, camera, view, projection, gc);
     }
 

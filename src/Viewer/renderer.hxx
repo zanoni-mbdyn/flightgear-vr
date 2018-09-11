@@ -129,9 +129,6 @@ FGRenderer();
     void setPlanes( double zNear, double zFar );
 
 #ifdef HAVE_OPENVR
-    void setupVR(osg::ref_ptr<osgViewer::Viewer> viewer, 
-		    osg::ref_ptr<OpenVRDevice> openvrDevice,
-		    osg::ref_ptr<OpenVRSwapCallback> swapCallback);
     bool splashDone(void) { return _done_splash;};
 #endif // HAVE_OPENVR
 
@@ -166,6 +163,7 @@ protected:
 
 #ifdef HAVE_OPENVR
     bool _done_splash;
+    std::vector<osg::ref_ptr<osg::View::Slave&>> _vrRTTSlaves(void);
 #endif // HAVE_OPENVR
 
     typedef std::vector<SGPropertyChangeListener*> SGPropertyChangeListenerVec;

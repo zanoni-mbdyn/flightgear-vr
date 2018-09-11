@@ -87,6 +87,15 @@ protected:
 	GLint m_height;
 };
 
+class OpenVRInitialDrawCallback : public osg::Camera::DrawCallback
+{
+public:
+	OpenVRInitialDrawCallback(void)
+	{
+	}
+
+	virtual void operator()(osg::RenderInfo& renderInfo) const;
+};
 
 class OpenVRPreDrawCallback : public osg::Camera::DrawCallback
 {
@@ -133,6 +142,9 @@ public:
 	} Eye;
 	OpenVRDevice(float nearClip, float farClip, const float worldUnitsPerMetre = 1.0f, const int samples = 0);
 	void createRenderBuffers(osg::ref_ptr<osg::State> state);
+	
+	osg::ref_ptr<OpenVRTextureBuffer> getTextureBuffer(OpenVRDevice::Eye eye) const {return m_textureBuffer[eye];};
+
 	void init();
 	void shutdown(osg::GraphicsContext* gc);
 

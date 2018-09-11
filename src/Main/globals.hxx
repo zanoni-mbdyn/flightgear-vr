@@ -167,6 +167,7 @@ private:
     bool _useVR;
     bool _isVRReady;
     osg::ref_ptr<OpenVRDevice> _openvrDevice;
+    osg::ref_ptr<OpenVRSwapCallback> _openvrSwapCallback;
 #endif // HAVE_OPENVR
 #endif // ndef(FG_TESTLIB)
 public:
@@ -424,6 +425,10 @@ public:
     bool useVR(void) {return _useVR;};
     bool isVRReady(void) {return _isVRReady;};
     void setVRReady(bool isVRReady) {_isVRReady = isVRReady;};
+    const osg::ref_ptr<OpenVRSwapCallback> getOpenVRSwapCallback(void) 
+    {
+	    return _openvrSwapCallback;
+    }
 #endif // HAVE_OPENVR
 #endif // ndef(FG_TESTLIB)
 };

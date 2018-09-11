@@ -446,20 +446,16 @@ void OpenVRDevice::updatePose()
 
 }
 
-class OpenVRInitialDrawCallback : public osg::Camera::DrawCallback
+void OpenVRInitialDrawCallback::operator()(osg::RenderInfo& renderInfo) const
 {
-public:
-	virtual void operator()(osg::RenderInfo& renderInfo) const
+	osg::GraphicsOperation* graphicsOperation = renderInfo.getCurrentCamera()->getRenderer();
+	osgViewer::Renderer* renderer = dynamic_cast<osgViewer::Renderer*>(graphicsOperation);
+	if (renderer != nullptr)
 	{
-		osg::GraphicsOperation* graphicsOperation = renderInfo.getCurrentCamera()->getRenderer();
-		osgViewer::Renderer* renderer = dynamic_cast<osgViewer::Renderer*>(graphicsOperation);
-		if (renderer != nullptr)
-		{
-			// Disable normal OSG FBO camera setup because it will undo the MSAA FBO configuration.
-			renderer->setCameraRequiresSetUp(false);
-		}
+		// Disable normal OSG FBO camera setup because it will undo the MSAA FBO configuration.
+		renderer->setCameraRequiresSetUp(false);
 	}
-};
+}
 
 osg::Camera* OpenVRDevice::createRTTCamera(OpenVRDevice::Eye eye, osg::Transform::ReferenceFrame referenceFrame, const osg::Vec4& clearColor, osg::GraphicsContext* gc) const
 {

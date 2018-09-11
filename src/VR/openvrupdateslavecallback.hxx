@@ -48,16 +48,15 @@ struct OpenVRUpdateSlaveCallback : public osg::View::Slave::UpdateSlaveCallback
 		RIGHT_CAMERA
 	};
 
-	OpenVRUpdateSlaveCallback(CameraType cameraType, OpenVRDevice* device, OpenVRSwapCallback* swapCallback) :
+	OpenVRUpdateSlaveCallback(CameraType cameraType, OpenVRDevice* device) :
 		m_cameraType(cameraType),
-		m_device(device),
-		m_swapCallback(swapCallback) {}
+		m_device(device)
+	{}
 
 	virtual void updateSlave(osg::View& view, osg::View::Slave& slave);
 
 	CameraType m_cameraType;
 	osg::ref_ptr<OpenVRDevice> m_device;
-	osg::ref_ptr<OpenVRSwapCallback> m_swapCallback;
 };
 
 #endif // _OSG_OPENVRUPDATESLAVECALLBACK_H_

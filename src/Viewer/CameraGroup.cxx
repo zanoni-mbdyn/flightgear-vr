@@ -322,7 +322,7 @@ void CameraInfo::updateCameras()
     }
 }
 
-#ifdef HAVE_OPENVR
+#if 0
 void CameraInfo::setupVRCameras(osg::ref_ptr<osgViewer::Viewer> viewer,
 			osg::ref_ptr<OpenVRDevice> openvrDevice,
 			osg::ref_ptr<OpenVRSwapCallback> swapCallback)
@@ -476,11 +476,6 @@ osg::Texture2D* CameraInfo::getBuffer(const std::string& k) const
 int CameraInfo::getMainSlaveIndex() const
 {
     return cameras.find( MAIN_CAMERA )->second.slaveIndex;
-}
-
-osg::Camera* CameraInfo::getMainCamera() const
-{
-	return cameras.find ( MAIN_CAMERA )->second;
 }
 
 void CameraInfo::setMatrices(osg::Camera* c)
@@ -1145,6 +1140,74 @@ CameraInfo* CameraGroup::buildCamera(SGPropertyNode* cameraNode)
 
 	return info;
 }
+
+#ifdef HAVE_OPENVR
+CameraInfo* CameraGroup::buildRTTCamera(Camera* parentCamera, 
+		osg::ref_ptr<osg::GraphicsContext> gc,
+		OpenVRDevice::Eye eye)
+{
+
+	osg::ref_ptr<OpenVRDevice> openvrDevice = globals->getOpenVRDevice();
+
+	// LEFT EYE CAMERA
+	osg::ref_ptr<OpenVRTextureBuffer> buffer = openvrDevice->getTextureBuffer(eye);
+	// General stuff
+	Camera* cameraRTT = new Camera;
+	cameraRTT->setClearColor(parentCamera->getClearColor());
+	cameraRTT->setClearMask(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	cameraRTT->setRenderTargetImplementation(Camera::FRAME_BUFFER_OBJECT);
+	cameraRTT->setRenderOrder(Camera::PRE_RENDER, eye);
+	cameraRTT->setComputeNearFarMode(osg::CullSettings::DO_NOT_COMPUTE_NEAR_FAR);
+	cameraRTT->setAllowEventFocus(false);
+	cameraRTT->setReferenceFrame(Camera::RELATIVE_RF);
+	cameraRTT->setViewport(0, 0, buffer->textureWidth(), buffer->textureHeight());
+	cameraRTT->setGraphicsContext(gc);
+
+	osg::Matrix vOff;
+	osg::Matrix pOff;
+	if (eye == OpenVRDevice::LEFT) {	
+		cameraRTT->setName(parentCamera->getName() + "_VR_RTT_Left");
+		vOff = openvrDevice->viewMatrixLeft();
+		pOff = openvrDevice->projectionOffsetMatrixLeft();
+	} else {
+		cameraRTT->setName(parentCamera->getName() + "_VR_RTT_Right");
+		vOff = openvrDevice->viewMatrixRight();
+		pOff = openvrDevice->projectionOffsetMatrixRight();
+	}
+
+	// Specific OpenVR stuff
+	cameraRTT->setInitialDrawCallback(new OpenVRInitialDrawCallback());
+	cameraRTT->setPreDrawCallback(new OpenVRPreDrawCallback(cameraRTT, buffer));
+	cameraRTT->setFinalDrawCallback(new OpenVRPostDrawCallback(cameraRTT, buffer));
+
+	// FG stuff
+	CameraInfo* info = globals->get_renderer()->buildRenderingPipeline(this, 
+			DO_INTERSECTION_TEST, cameraRTT, vOff, pOff, gc, false);
+	info->name = cameraRTT->getName();
+	info->isVRRTTCamera = true;
+	if (eye == OpenVRDevice::LEFT) {
+		info->vrCameraType = OpenVRUpdateSlaveCallback::CameraType::LEFT_CAMERA;
+	} else {
+		info->vrCameraType = OpenVRUpdateSlaveCallback::CameraType::RIGHT_CAMERA;
+	}	
+	info->physicalWidth = buffer->textureWidth();
+	info->physicalHeight = buffer->textureHeight();
+	info->bezelHeightTop = 0.;
+	info->bezelHeightBottom = 0.;
+	info->bezelWidthLeft = 0.;
+	info->bezelWidthRight = 0.;
+	unsigned parentCameraIndex = ~0u;
+	for (unsigned i = 0; i < _cameras.size(); ++i) {
+		if ( _cameras[i]->name != parentCamera->getName() ) {
+			continue;
+		}
+		parentCameraIndex = i;
+	}
+	double tmp = 
+	info->relativeCameraParent = parentCameraIndex;
+	info->updateCameras();
+}
+#endif // HAVE_OPENVR
 
 CameraInfo* CameraGroup::buildGUICamera(SGPropertyNode* cameraNode,
                                         GraphicsWindow* window)

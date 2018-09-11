@@ -98,7 +98,10 @@ struct CameraInfo : public osg::Referenced
           x(0.0), y(0.0), width(0.0), height(0.0),
           physicalWidth(0), physicalHeight(0), bezelHeightTop(0),
           bezelHeightBottom(0), bezelWidthLeft(0), bezelWidthRight(0),
-          relativeCameraParent(~0u),
+	  relativeCameraParent(~0u),
+#ifdef HAVE_OPENVR
+	  isVRRTTCamera(false),
+#endif // HAVE_OPENVR 
           bufferSize( new osg::Uniform("fg_BufferSize", osg::Vec2f() ) ),
           projInverse( new osg::Uniform( "fg_ProjectionMatrixInverse", osg::Matrixf() ) ),
           viewInverse( new osg::Uniform( "fg_ViewMatrixInverse",osg::Matrixf() ) ),
@@ -147,6 +150,12 @@ struct CameraInfo : public osg::Referenced
      */
     unsigned relativeCameraParent;
 
+#ifdef HAVE_OPENVR
+    // Signals if this is an RTT camera for HMD
+    bool isVRRTTCamera;
+    OpenVRUpdateSlaveCallback::CameraType vrCameraType;
+#endif 
+
     /** the camera objects
      */
     CameraMap cameras;
@@ -184,7 +193,7 @@ struct CameraInfo : public osg::Referenced
     /** The reference points in the current projection space.
      */
     osg::Vec2d thisReference[2];
-#ifdef HAVE_OPENVR
+#if 0
     void setupVRCameras(osg::ref_ptr<osgViewer::Viewer> viewer,
 		    osg::ref_ptr<OpenVRDevice> openvrDevice,
 		    osg::ref_ptr<OpenVRSwapCallback> swapCallback);
@@ -303,7 +312,11 @@ public:
     void setZNear(float f) { _zNear = f; }
     void setZFar(float f) { _zFar = f; }
     void setNearField(float f) { _nearField = f; }
-
+#ifdef HAVE_OPENVR
+    CameraInfo* buildRTTCamera(osg::Camera* parentCamera,
+		    osg::ref_ptr<osg::GraphicsContext> gc,
+		    OpenVRDevice::Eye eye);
+#endif // HAVE_OPENVR
 protected:
     CameraList _cameras;
     osg::ref_ptr<osgViewer::Viewer> _viewer;
