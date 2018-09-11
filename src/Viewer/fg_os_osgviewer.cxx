@@ -292,6 +292,14 @@ void fgOSOpenWindow(bool stencil)
     viewer->setKeyEventSetsDone(0);
     // The viewer won't start without some root.
     viewer->setSceneData(new osg::Group);
+#ifdef HAVE_OPENVR
+    if ( globals->useVR() ) {
+	osg::ref_ptr<OpenVRRealizeOperation> openvrRealizeOperation = 
+	    new OpenVRRealizeOperation(globals->getOpenVRDevice());
+
+	viewer->setRealizeOperation(openvrRealizeOperation.get());
+    }
+#endif // HAVE_OPENVR
     globals->get_renderer()->setViewer(viewer.get());
 }
 
@@ -385,12 +393,6 @@ void fgOSInit(int* argc, char** argv)
 #endif
 
     globals->get_renderer()->init();
-#ifdef HAVE_OPENVR
-    osg::ref_ptr<OpenVRRealizeOperation> openvrRealizeOperation = 
-	new OpenVRRealizeOperation(globals->getOpenVRDevice());
-    
-    viewer->setRealizeOperation(openvrRealizeOperation.get());
-#endif // HAVE_OPENVR
     WindowSystemAdapter::setWSA(new WindowSystemAdapter);
 }
 
