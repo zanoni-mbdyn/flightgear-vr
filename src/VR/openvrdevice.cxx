@@ -486,7 +486,7 @@ osg::Camera* OpenVRDevice::createRTTCamera(OpenVRDevice::Eye eye, osg::Transform
 	return camera.release();
 }
 
-void OpenVRDevice::prepareRTTCameraViewPort(osg::Camera* camera)
+void OpenVRDevice::prepareRTTCameraViewport(osg::Camera* camera)
 {
 	uint32_t renderWidth;
 	uint32_t renderHeight;
@@ -497,7 +497,7 @@ void OpenVRDevice::prepareRTTCameraViewPort(osg::Camera* camera)
 
 void OpenVRDevice::getRTTCameraViewportDims(uint32_t& renderWidth, uint32_t& renderHeight)
 {
-	m_vrSystem->GetRecommendedRenderTargetSize(renderWidth, renderHeight);
+	m_vrSystem->GetRecommendedRenderTargetSize(&renderWidth, &renderHeight);
 }
 
 bool OpenVRDevice::submitFrame()

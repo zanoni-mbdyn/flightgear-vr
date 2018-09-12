@@ -172,7 +172,7 @@ public:
 
 	osg::Camera* createRTTCamera(OpenVRDevice::Eye eye, osg::Transform::ReferenceFrame referenceFrame, const osg::Vec4& clearColor, osg::GraphicsContext* gc = 0) const;
 	void prepareRTTCameraViewport(osg::Camera* camera);
-	void getRTTCameraViewportDims(uint32_t& renderWidth, unit32_t& renderHeight);
+	void getRTTCameraViewportDims(uint32_t& renderWidth, uint32_t& renderHeight);
 
 	bool submitFrame();
 	void blitMirrorTexture(osg::GraphicsContext* gc);

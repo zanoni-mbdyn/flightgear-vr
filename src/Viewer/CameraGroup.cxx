@@ -1141,7 +1141,7 @@ CameraInfo* CameraGroup::buildCamera(SGPropertyNode* cameraNode)
 			buildVRRTTCamera(camera, window->gc.get(), OpenVRDevice::Eye::LEFT);
 			buildVRRTTCamera(camera, window->gc.get(), OpenVRDevice::Eye::RIGHT);
 		
-			// Moved to FGRenderer::buildVRBuffers()
+			// MOVED to FGRenderer::buildVRBuffers()
 			// osg::ref_ptr<osg::State> state = window->gc->getState();
 			// globals->getOpenVRDevice()->createRenderBuffers(state);
 			// globals->getOpenVRDevice()->init();

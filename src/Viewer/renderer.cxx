@@ -1677,6 +1677,94 @@ FGRenderer::setupView( void )
 #ifdef HAVE_OPENVR
 void FGRenderer::buildVRBuffers() 
 {
+	osg::GraphicsContext* gc;
+	osg::ref_ptr<OpenVRDevice> openvrDevice = globals->getOpenVRDevice();
+
+	for ( CameraGroup::CameraIterator i = CameraGroup::getDefault()->camerasBegin();
+			i != CameraGroup::getDefault()->camerasEnd();
+			++i )
+	{
+		CameraInfo* info = i->get();
+		if (info->name == "VRC") {
+			info->getCamera(MAIN_CAMERA)->setGraphicsContext(nullptr);
+		}
+
+	}
+
+	for ( CameraGroup::CameraIterator i = CameraGroup::getDefault()->camerasBegin();
+			i != CameraGroup::getDefault()->camerasEnd();
+			++i )
+	{
+		CameraInfo* info = i->get();
+		osg::ref_ptr<OpenVRTextureBuffer> buffer;
+		if (info->name == "VRC_VR_RTT_Left") {
+			gc = info->getCamera(DISPLAY_CAMERA)->getGraphicsContext();
+			osg::ref_ptr<osg::State> state = gc->getState();
+			openvrDevice->createRenderBuffers(state);
+			openvrDevice->init();
+			
+			buffer = openvrDevice->getTextureBuffer(OpenVRDevice::Eye::LEFT);
+			osg::ref_ptr<osg::Camera> camera = nullptr;
+			camera = info->getCamera(FAR_CAMERA);
+			if (camera.valid() && camera->getNodeMask()) {
+				setVRCameraCallbacks(camera, buffer);
+			}
+
+			camera = info->getCamera(GEOMETRY_CAMERA);
+			if (camera) {
+				setVRCameraCallbacks(camera, buffer);
+			}
+			
+			camera = info->getCamera(LIGHTING_CAMERA);
+			if (camera) {
+				osg::Switch* sw = camera->getChild(0)->asSwitch();
+				for (unsigned int i = 0; i < sw->getNumChildren(); ++i) {
+					osg::Camera* lc = dynamic_cast<osg::Camera*>(sw->getChild(i));
+					if (lc) {
+						std::string name = lc->getName();
+						if (name == "LightCamera") {
+							setVRCameraCallbacks(camera, buffer);
+						}
+					}
+				}
+			}
+		} else if (info->name == "VRC_VR_RTT_Right") {
+			buffer = openvrDevice->getTextureBuffer(OpenVRDevice::Eye::RIGHT);
+			osg::ref_ptr<osg::Camera> camera = nullptr;
+			camera = info->getCamera(FAR_CAMERA);
+			if (camera.valid() && camera->getNodeMask()) {
+				setVRCameraCallbacks(camera, buffer);
+			}
+
+			camera = info->getCamera(GEOMETRY_CAMERA);
+			if (camera) {
+				setVRCameraCallbacks(camera, buffer);
+			}
+			
+			camera = info->getCamera(LIGHTING_CAMERA);
+			if (camera) {
+				osg::Switch* sw = camera->getChild(0)->asSwitch();
+				for (unsigned int i = 0; i < sw->getNumChildren(); ++i) {
+					osg::Camera* lc = dynamic_cast<osg::Camera*>(sw->getChild(i));
+					if (lc) {
+						std::string name = lc->getName();
+						if (name == "LightCamera") {
+							setVRCameraCallbacks(camera, buffer);
+						}
+					}
+				}
+			}
+		}
+	}
+
+}
+
+void FGRenderer::setVRCameraCallbacks(osg::ref_ptr<osg::Camera> camera, 
+		osg::ref_ptr<OpenVRTextureBuffer> buffer)
+{
+	camera->setInitialDrawCallback(new OpenVRInitialDrawCallback());
+	camera->setPreDrawCallback(new OpenVRPreDrawCallback(camera, buffer));
+	camera->setFinalDrawCallback(new OpenVRPostDrawCallback(camera, buffer));
 
 }
 #endif // HAVE_OPENVR
