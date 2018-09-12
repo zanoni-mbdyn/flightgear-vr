@@ -1138,15 +1138,17 @@ CameraInfo* CameraGroup::buildCamera(SGPropertyNode* cameraNode)
 		if ( (info->name == "VRC") && (windowName == "VR") ) {
 			
 			// window->setSyncToVBlank(false);
-			osg::ref_ptr<osg::State> state = window->gc->getState();
-			globals->getOpenVRDevice()->createRenderBuffers(state);
-			globals->getOpenVRDevice()->init();
+			buildVRRTTCamera(camera, window->gc.get(), OpenVRDevice::Eye::LEFT);
+			buildVRRTTCamera(camera, window->gc.get(), OpenVRDevice::Eye::RIGHT);
+		
+			// Moved to FGRenderer::buildVRBuffers()
+			// osg::ref_ptr<osg::State> state = window->gc->getState();
+			// globals->getOpenVRDevice()->createRenderBuffers(state);
+			// globals->getOpenVRDevice()->init();
 
 			osg::ref_ptr<OpenVRSwapCallback> swapCallback = new OpenVRSwapCallback(globals->getOpenVRDevice());
 			window->gc->setSwapCallback(swapCallback);
 
-			buildVRRTTCamera(camera, window->gc.get(), OpenVRDevice::Eye::LEFT);
-			buildVRRTTCamera(camera, window->gc.get(), OpenVRDevice::Eye::RIGHT);
 		}
 	}
 #endif // HAVE_OPENVR
@@ -1169,7 +1171,10 @@ CameraInfo* CameraGroup::buildVRRTTCamera(Camera* parentCamera,
 	osg::ref_ptr<OpenVRDevice> openvrDevice = globals->getOpenVRDevice();
 
 	// LEFT EYE CAMERA
-	osg::ref_ptr<OpenVRTextureBuffer> buffer = openvrDevice->getTextureBuffer(eye);
+	
+	// MOVED TO FGRenderer::buildVRBuffers
+	// osg::ref_ptr<OpenVRTextureBuffer> buffer = openvrDevice->getTextureBuffer(eye);
+	
 	// General stuff
 	Camera* cameraRTT = new Camera;
 	cameraRTT->setClearColor(parentCamera->getClearColor());
@@ -1179,7 +1184,10 @@ CameraInfo* CameraGroup::buildVRRTTCamera(Camera* parentCamera,
 	cameraRTT->setComputeNearFarMode(osg::CullSettings::DO_NOT_COMPUTE_NEAR_FAR);
 	cameraRTT->setAllowEventFocus(false);
 	cameraRTT->setReferenceFrame(Camera::RELATIVE_RF);
-	cameraRTT->setViewport(0, 0, buffer->textureWidth(), buffer->textureHeight());
+
+	uint32_t renderWidth;
+	uint32_t renderHeight;
+	openvrDevice->getRTTCameraViewportDims(renderWidth, renderHeight);
 	cameraRTT->setGraphicsContext(gc);
 
 	osg::Matrix vOff;
@@ -1194,10 +1202,10 @@ CameraInfo* CameraGroup::buildVRRTTCamera(Camera* parentCamera,
 		pOff = openvrDevice->projectionOffsetMatrixRight();
 	}
 
-	// Specific OpenVR stuff
-	cameraRTT->setInitialDrawCallback(new OpenVRInitialDrawCallback());
-	cameraRTT->setPreDrawCallback(new OpenVRPreDrawCallback(cameraRTT, buffer));
-	cameraRTT->setFinalDrawCallback(new OpenVRPostDrawCallback(cameraRTT, buffer));
+	// Specific OpenVR stuff -- MOVED TO FGRenderer::buildVRBuffers
+	// cameraRTT->setInitialDrawCallback(new OpenVRInitialDrawCallback());
+	// cameraRTT->setPreDrawCallback(new OpenVRPreDrawCallback(cameraRTT, buffer));
+	// cameraRTT->setFinalDrawCallback(new OpenVRPostDrawCallback(cameraRTT, buffer));
 
 	// FG stuff
 	CameraInfo* info;
@@ -1213,8 +1221,8 @@ CameraInfo* CameraGroup::buildVRRTTCamera(Camera* parentCamera,
 		info->name = parentCamera->getName() + "_VR_RTT_Right";
 	}	
 	
-	info->physicalWidth = buffer->textureWidth();
-	info->physicalHeight = buffer->textureHeight();
+	info->physicalWidth = renderWidth;
+	info->physicalHeight = renderHeight;
 	info->bezelHeightTop = 0.;
 	info->bezelHeightBottom = 0.;
 	info->bezelWidthLeft = 0.;

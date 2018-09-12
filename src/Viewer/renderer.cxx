@@ -1674,6 +1674,13 @@ FGRenderer::setupView( void )
 
 }
 
+#ifdef HAVE_OPENVR
+void FGRenderer::buildVRBuffers() 
+{
+
+}
+#endif // HAVE_OPENVR
+
 // Update all Visuals (redraws anything graphics related)
 void
 FGRenderer::update( ) {
@@ -1761,8 +1768,8 @@ FGRenderer::update( ) {
     }
     
 #ifdef HAVE_OPENVR
-    if (_splash_alpha->getDoubleValue() == 0.0) {
-	  _done_splash = true;  
+    if (globals->useVR() && _splash_alpha->getDoubleValue() == 0.0) {
+	  buildVRBuffers(); 
     }
 #endif // HAVE_OPENVR
 }

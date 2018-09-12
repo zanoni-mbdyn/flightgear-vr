@@ -486,6 +486,20 @@ osg::Camera* OpenVRDevice::createRTTCamera(OpenVRDevice::Eye eye, osg::Transform
 	return camera.release();
 }
 
+void OpenVRDevice::prepareRTTCameraViewPort(osg::Camera* camera)
+{
+	uint32_t renderWidth;
+	uint32_t renderHeight;
+	m_vrSystem->GetRecommendedRenderTargetSize(&renderWidth, &renderHeight);
+
+	camera->setViewport(0, 0, renderWidth, renderHeight);
+}
+
+void OpenVRDevice::getRTTCameraViewportDims(uint32_t& renderWidth, uint32_t& renderHeight)
+{
+	m_vrSystem->GetRecommendedRenderTargetSize(renderWidth, renderHeight);
+}
+
 bool OpenVRDevice::submitFrame()
 {
 	vr::Texture_t leftEyeTexture = {(void*)m_textureBuffer[0]->getTexture(), vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
