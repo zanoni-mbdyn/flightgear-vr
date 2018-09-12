@@ -630,8 +630,17 @@ FGRenderer::buildVRRenderingPipeline(CameraGroup* cgroup, unsigned flags, Camera
 	CameraInfo* info = 0;
 	if (_classicalRenderer) {
 		throw sg_exception("VR unsupported with classical renderer! Please enable Rembrandt");
-	} else if ( flags & (CameraGroup::GUI | CameraGroup::ORTHO) == 0) {
+	} else if ( (flags & (CameraGroup::GUI | CameraGroup::ORTHO)) == 0) {
 		info = buildDeferredVRPipeline(cgroup, flags, camera, view, projection, gc, vrCameraType);
+	}
+
+	if (info) {
+		return info;
+	} else {
+		if ( (flags & (CameraGroup::GUI | CameraGroup::ORTHO)) == 0  ) {
+			_classicalRenderer = true;
+			return buildClassicalPipeline(cgroup, flags, camera, view, projection, useMasterSceneData);
+		}
 	}
 }
 #endif

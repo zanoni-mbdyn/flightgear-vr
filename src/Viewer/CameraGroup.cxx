@@ -1134,7 +1134,8 @@ CameraInfo* CameraGroup::buildCamera(SGPropertyNode* cameraNode)
 
 #ifdef HAVE_OPENVR
 	if (globals->useVR()) {
-		if ( (info->name == "VRC") && (windowNode->getStringValue("name") == "VR") ) {
+		std::string windowName = window->gc->getTraits()->windowName;
+		if ( (info->name == "VRC") && (windowName == "VR") ) {
 			buildVRRTTCamera(camera, window->gc.get(), OpenVRDevice::Eye::LEFT);
 			buildVRRTTCamera(camera, window->gc.get(), OpenVRDevice::Eye::RIGHT);
 		}
@@ -1195,13 +1196,14 @@ CameraInfo* CameraGroup::buildVRRTTCamera(Camera* parentCamera,
 		CameraInfo* info = globals->get_renderer()->buildVRRenderingPipeline(this, 
 			DO_INTERSECTION_TEST, cameraRTT, vOff, pOff, gc, false, 
 			OpenVRUpdateSlaveCallback::CameraType::LEFT_CAMERA);
+		info->name = parentCamera->getName() + "_VR_RTT_Left";
 	} else {
 		CameraInfo* info = globals->get_renderer()->buildVRRenderingPipeline(this, 
 			DO_INTERSECTION_TEST, cameraRTT, vOff, pOff, gc, false,
 			OpenVRUpdateSlaveCallback::CameraType::RIGHT_CAMERA);
+		info->name = parentCamera->getName() + "_VR_RTT_Right";
 	}	
 	
-	info->name = cameraRTT->getName();
 	info->physicalWidth = buffer->textureWidth();
 	info->physicalHeight = buffer->textureHeight();
 	info->bezelHeightTop = 0.;

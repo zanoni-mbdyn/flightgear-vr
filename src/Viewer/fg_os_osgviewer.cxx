@@ -266,6 +266,15 @@ void fgOSOpenWindow(bool stencil)
     viewer = new osgViewer::Viewer;
     viewer->setDatabasePager(FGScenery::getPagerSingleton());
 
+#ifdef HAVE_OPENVR
+    if ( globals->useVR() ) {
+	osg::ref_ptr<OpenVRRealizeOperation> openvrRealizeOperation = 
+	    new OpenVRRealizeOperation(globals->getOpenVRDevice());
+
+	viewer->setRealizeOperation(openvrRealizeOperation.get());
+    }
+#endif // HAVE_OPENVR
+
     std::string mode;
     mode = fgGetString("/sim/rendering/multithreading-mode", "SingleThreaded");
     if (mode == "AutomaticSelection")
@@ -279,6 +288,11 @@ void fgOSOpenWindow(bool stencil)
     else
       viewer->setThreadingModel(osgViewer::Viewer::SingleThreaded);
     WindowBuilder::initWindowBuilder(stencil);
+#ifdef HAVE_OPENVR
+    // Need to anticipate the viewer realization here, since
+    // we need to operate on the texture buffers to create the RTT cameras
+    viewer->realize();
+#endif // HAVE_OPENVR
     CameraGroup::buildDefaultGroup(viewer.get());
 
     FGEventHandler* manipulator = globals->get_renderer()->getEventHandler();
@@ -292,14 +306,6 @@ void fgOSOpenWindow(bool stencil)
     viewer->setKeyEventSetsDone(0);
     // The viewer won't start without some root.
     viewer->setSceneData(new osg::Group);
-#ifdef HAVE_OPENVR
-    if ( globals->useVR() ) {
-	osg::ref_ptr<OpenVRRealizeOperation> openvrRealizeOperation = 
-	    new OpenVRRealizeOperation(globals->getOpenVRDevice());
-
-	viewer->setRealizeOperation(openvrRealizeOperation.get());
-    }
-#endif // HAVE_OPENVR
     globals->get_renderer()->setViewer(viewer.get());
 }
 
