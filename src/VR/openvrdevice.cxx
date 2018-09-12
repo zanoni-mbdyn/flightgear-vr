@@ -629,6 +629,7 @@ void OpenVRRealizeOperation::operator() (osg::GraphicsContext* gc)
 		OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_mutex);
 		gc->makeCurrent();
 
+		/*
 		if (osgViewer::GraphicsWindow* window = dynamic_cast<osgViewer::GraphicsWindow*>(gc))
 		{
 			// Run wglSwapIntervalEXT(0) to force VSync Off
@@ -639,6 +640,7 @@ void OpenVRRealizeOperation::operator() (osg::GraphicsContext* gc)
 		m_device->createRenderBuffers(state);
 		// Init the openvr system
 		m_device->init();
+		*/
 	}
 
 	m_realized = true;

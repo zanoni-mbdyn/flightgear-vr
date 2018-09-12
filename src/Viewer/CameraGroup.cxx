@@ -1136,6 +1136,15 @@ CameraInfo* CameraGroup::buildCamera(SGPropertyNode* cameraNode)
 	if (globals->useVR()) {
 		std::string windowName = window->gc->getTraits()->windowName;
 		if ( (info->name == "VRC") && (windowName == "VR") ) {
+			
+			// window->setSyncToVBlank(false);
+			osg::ref_ptr<osg::State> state = window->gc->getState();
+			globals->getOpenVRDevice()->createRenderBuffers(state);
+			globals->getOpenVRDevice()->init();
+
+			osg::ref_ptr<OpenVRSwapCallback> swapCallback = new OpenVRSwapCallback(globals->getOpenVRDevice());
+			window->gc->setSwapCallback(swapCallback);
+
 			buildVRRTTCamera(camera, window->gc.get(), OpenVRDevice::Eye::LEFT);
 			buildVRRTTCamera(camera, window->gc.get(), OpenVRDevice::Eye::RIGHT);
 		}
