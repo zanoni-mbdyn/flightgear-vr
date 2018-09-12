@@ -291,6 +291,7 @@ void fgOSOpenWindow(bool stencil)
 #ifdef HAVE_OPENVR
     // Need to anticipate the viewer realization here, since
     // we need to operate on the texture buffers to create the RTT cameras
+    viewer->setReleaseContextAtEndOfFrameHint(false);
     viewer->realize();
 #endif // HAVE_OPENVR
     CameraGroup::buildDefaultGroup(viewer.get());
