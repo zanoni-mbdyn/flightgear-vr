@@ -1132,6 +1132,15 @@ CameraInfo* CameraGroup::buildCamera(SGPropertyNode* cameraNode)
 	info->viewportListener = new CameraViewportListener(info, viewportNode, window->gc->getTraits());
 	info->updateCameras();
 
+#ifdef HAVE_OPENVR
+	if (globals->useVR()) {
+		if ( (info->name == "VRC") && (windowNode->getStringValue("name") == "VR") ) {
+			buildVRRTTCamera(camera, window->gc.get(), OpenVRDevice::Eye::LEFT);
+			buildVRRTTCamera(camera, window->gc.get(), OpenVRDevice::Eye::RIGHT);
+		}
+	}
+#endif // HAVE_OPENVR
+
 	// Distortion camera needs the viewport which is created by addCamera().
 	if (psNode) {
 		info->flags = info->flags | VIEW_ABSOLUTE;
@@ -1209,6 +1218,8 @@ CameraInfo* CameraGroup::buildVRRTTCamera(Camera* parentCamera,
 	double tmp = 
 	info->relativeCameraParent = parentCameraIndex;
 	info->updateCameras();
+
+	return info;
 }
 #endif // HAVE_OPENVR
 
