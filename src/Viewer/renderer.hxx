@@ -134,6 +134,7 @@ FGRenderer();
 			osg::GraphicsContext* gc,
 			const OpenVRUpdateSlaveCallback::CameraType vrCameraType);
 
+	void buildVRBuffers(void);
     
 #endif // HAVE_OPENVR
 
@@ -212,7 +213,6 @@ protected:
 		    const osg::Matrix& projection, 
 		    osg::GraphicsContext* gc,
 		    const OpenVRUpdateSlaveCallback::CameraType vrCameraType);
-    void buildVRBuffers(void);
     void setVRCameraCallbacks(osg::ref_ptr<osg::Camera> camera, osg::ref_ptr<OpenVRTextureBuffer> textureBuffer);
 #endif // HAVE_OPENVR
     osg::Node* buildPass(flightgear::CameraInfo* info, FGRenderingPipeline::Pass* pass);

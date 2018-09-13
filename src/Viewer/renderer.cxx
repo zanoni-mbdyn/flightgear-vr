@@ -1855,7 +1855,7 @@ FGRenderer::update( ) {
 	    _fogDensity->set( float( _updateVisitor->getFogExp2Density() ) );
     }
     
-#ifdef HAVE_OPENVR
+#if 0
     if (globals->useVR() && _splash_alpha->getDoubleValue() == 0.0) {
 	  buildVRBuffers(); 
     }

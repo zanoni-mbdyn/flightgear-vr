@@ -349,6 +349,11 @@ int fgOSMainLoop()
     viewer->setReleaseContextAtEndOfFrameHint(false);
     if (!viewer->isRealized()) {
         viewer->realize();
+#ifdef HAVE_OPENVR
+	if (globals->useVR()) {
+		globals->get_renderer()->buildVRBuffers();
+	}
+#endif // HAVE_OPENVR
     }
 
     while (!viewer->done()) {
