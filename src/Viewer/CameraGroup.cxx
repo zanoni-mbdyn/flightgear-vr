@@ -1180,14 +1180,17 @@ CameraInfo* CameraGroup::buildVRRTTCamera(SGPropertyNode* parentCameraNode,
 	uint32_t renderHeight;
 	openvrDevice->getRTTCameraViewportDims(renderWidth, renderHeight);
 	SGPropertyNode* viewportNode = parentCameraNode->getNode("viewport", true);
-	double physicalWidth = viewportNode->getDoubleValue("width", renderWidth);
-	double physicalHeight = viewportNode->getDoubleValue("height", renderHeight);
+	viewportNode->setDoubleValue("width", renderWidth);
+	viewportNode->setDoubleValue("height", renderHeight);
 	
 	// General stuff
 	Camera* cameraRTT = new Camera;
 	cameraRTT->setGraphicsContext(gc);
+	cameraRTT->setViewport(new osg::Viewport);
 	cameraRTT->setClearColor(parentCamera->getClearColor());
 	cameraRTT->setClearMask(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	cameraRTT->setCullingMode(CullSettings::SMALL_FEATURE_CULLING
+			| CullSettings::VIEW_FRUSTUM_CULLING);
 	cameraRTT->setRenderTargetImplementation(Camera::FRAME_BUFFER_OBJECT);
 	cameraRTT->setRenderOrder(Camera::PRE_RENDER, eye);
 	cameraRTT->setComputeNearFarMode(osg::CullSettings::DO_NOT_COMPUTE_NEAR_FAR);
@@ -1243,23 +1246,20 @@ CameraInfo* CameraGroup::buildVRRTTCamera(SGPropertyNode* parentCameraNode,
 		info->name = parentCamera->getName() + "_VR_RTT_Right";
 	}	
 
-	info->physicalWidth = physicalWidth;
-	info->physicalHeight = physicalHeight;
+	info->physicalWidth = renderWidth;
+	info->physicalHeight = renderHeight;
 	info->bezelHeightTop = 0.;
 	info->bezelHeightBottom = 0.;
 	info->bezelWidthLeft = 0.;
 	info->bezelWidthRight = 0.;
 	unsigned parentCameraIndex = ~0u;
-	/*
-	for (unsigned i = 0; i < _cameras.size(); ++i) {
-		if ( _cameras[i]->name != parentCamera->getName() ) {
-			continue;
-		}
-		parentCameraIndex = i;
-	}
-	double tmp = 
-	*/
+	osg::Vec2d parentReference[2];
+	osg::Vec2d thisReference[2];
 	info->relativeCameraParent = parentCameraIndex;
+	info->parentReference[0] = parentReference[0];
+	info->parentReference[1] = parentReference[1];
+	info->thisReference[0] = thisReference[0];
+	info->thisReference[1] = thisReference[1];
 	info->viewportListener = new CameraViewportListener(info, viewportNode, gc->getTraits());
 	info->updateCameras();
 
