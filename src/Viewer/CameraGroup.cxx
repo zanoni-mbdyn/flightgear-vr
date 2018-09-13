@@ -317,7 +317,7 @@ void CameraInfo::updateCameras()
         osg::Texture2D* texture = ii->second.texture.get();
         if ( texture->getTextureHeight() != height*f || texture->getTextureWidth() != width*f ) {
             texture->setTextureSize( width*f, height*f );
-            texture->dirtyTextureObject
+            texture->dirtyTextureObject();
         }
     }
 }
@@ -1138,8 +1138,8 @@ CameraInfo* CameraGroup::buildCamera(SGPropertyNode* cameraNode)
 		if ( (info->name == "VRC") && (windowName == "VR") ) {
 			
 			// window->setSyncToVBlank(false);
-			buildVRRTTCamera(camera, window->gc.get(), OpenVRDevice::Eye::LEFT);
-			buildVRRTTCamera(camera, window->gc.get(), OpenVRDevice::Eye::RIGHT);
+			buildVRRTTCamera(cameraNode, camera, window->gc.get(), OpenVRDevice::Eye::LEFT);
+			buildVRRTTCamera(cameraNode, camera, window->gc.get(), OpenVRDevice::Eye::RIGHT);
 		
 			// MOVED to FGRenderer::buildVRBuffers()
 			// osg::ref_ptr<osg::State> state = window->gc->getState();
@@ -1163,7 +1163,8 @@ CameraInfo* CameraGroup::buildCamera(SGPropertyNode* cameraNode)
 }
 
 #ifdef HAVE_OPENVR
-CameraInfo* CameraGroup::buildVRRTTCamera(Camera* parentCamera, 
+CameraInfo* CameraGroup::buildVRRTTCamera(SGPropertyNode* parentCameraNode,
+		osg::Camera* parentCamera, 
 		osg::ref_ptr<osg::GraphicsContext> gc,
 		OpenVRDevice::Eye eye)
 {
@@ -1188,7 +1189,7 @@ CameraInfo* CameraGroup::buildVRRTTCamera(Camera* parentCamera,
 	uint32_t renderWidth;
 	uint32_t renderHeight;
 	openvrDevice->getRTTCameraViewportDims(renderWidth, renderHeight);
-	const SGPropertyNode* viewportNode = cameraNode->getNode("viewport", true);
+	SGPropertyNode* viewportNode = parentCameraNode->getNode("viewport", true);
 	double physicalWidth = viewportNode->getDoubleValue("width", renderWidth);
 	double physicalHeight = viewportNode->getDoubleValue("height", renderHeight);
 	cameraRTT->setGraphicsContext(gc);
@@ -1239,7 +1240,7 @@ CameraInfo* CameraGroup::buildVRRTTCamera(Camera* parentCamera,
 	}
 	double tmp = 
 	info->relativeCameraParent = parentCameraIndex;
-	info->ViewPortListener = CameraViewportListener(info, viewportNode, gc->getTraits());
+	info->viewportListener = new CameraViewportListener(info, viewportNode, gc->getTraits());
 	info->updateCameras();
 
 	return info;

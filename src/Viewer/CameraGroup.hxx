@@ -304,7 +304,8 @@ public:
     void setZFar(float f) { _zFar = f; }
     void setNearField(float f) { _nearField = f; }
 #ifdef HAVE_OPENVR
-    CameraInfo* buildVRRTTCamera(osg::Camera* parentCamera,
+    CameraInfo* buildVRRTTCamera(SGPropertyNode* parentCameraNode,
+		    osg::Camera* parentCamera,
 		    osg::ref_ptr<osg::GraphicsContext> gc,
 		    OpenVRDevice::Eye eye);
 #endif // HAVE_OPENVR
