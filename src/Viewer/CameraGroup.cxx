@@ -1173,11 +1173,19 @@ CameraInfo* CameraGroup::buildVRRTTCamera(SGPropertyNode* parentCameraNode,
 
 	// LEFT EYE CAMERA
 	
-	// MOVED TO FGRenderer::buildVRBuffers
+	// MOVED TO FGRenderer::update()
 	// osg::ref_ptr<OpenVRTextureBuffer> buffer = openvrDevice->getTextureBuffer(eye);
+	
+	uint32_t renderWidth;
+	uint32_t renderHeight;
+	openvrDevice->getRTTCameraViewportDims(renderWidth, renderHeight);
+	SGPropertyNode* viewportNode = parentCameraNode->getNode("viewport", true);
+	double physicalWidth = viewportNode->getDoubleValue("width", renderWidth);
+	double physicalHeight = viewportNode->getDoubleValue("height", renderHeight);
 	
 	// General stuff
 	Camera* cameraRTT = new Camera;
+	cameraRTT->setGraphicsContext(gc);
 	cameraRTT->setClearColor(parentCamera->getClearColor());
 	cameraRTT->setClearMask(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	cameraRTT->setRenderTargetImplementation(Camera::FRAME_BUFFER_OBJECT);
@@ -1185,28 +1193,38 @@ CameraInfo* CameraGroup::buildVRRTTCamera(SGPropertyNode* parentCameraNode,
 	cameraRTT->setComputeNearFarMode(osg::CullSettings::DO_NOT_COMPUTE_NEAR_FAR);
 	cameraRTT->setAllowEventFocus(false);
 	cameraRTT->setReferenceFrame(Camera::RELATIVE_RF);
+	
+	// Create a 'placeholder' textureBuffer
+	osg::TextureRectangle* texture = new TextureRectangle;
+	texture->setTextureSize(renderWidth, renderHeight);
+	texture->setInternalFormat(GL_RGB);
+	texture->setFilter(osg::Texture::MIN_FILTER, osg::Texture::LINEAR);
+	texture->setFilter(osg::Texture::MAG_FILTER, osg::Texture::LINEAR);
+	texture->setWrap(osg::Texture::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
+	texture->setWrap(osg::Texture::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
+	cameraRTT->setDrawBuffer(GL_FRONT);
+	cameraRTT->setReadBuffer(GL_FRONT);
+	cameraRTT->attach(osg::Camera::COLOR_BUFFER, texture);
 
-	uint32_t renderWidth;
-	uint32_t renderHeight;
-	openvrDevice->getRTTCameraViewportDims(renderWidth, renderHeight);
-	SGPropertyNode* viewportNode = parentCameraNode->getNode("viewport", true);
-	double physicalWidth = viewportNode->getDoubleValue("width", renderWidth);
-	double physicalHeight = viewportNode->getDoubleValue("height", renderHeight);
-	cameraRTT->setGraphicsContext(gc);
 
 	osg::Matrix vOff;
 	osg::Matrix pOff;
-	if (eye == OpenVRDevice::LEFT) {	
+	std::string texName;
+	if (eye == OpenVRDevice::LEFT) {
 		cameraRTT->setName(parentCamera->getName() + "_VR_RTT_Left");
+		texName = parentCamera->getName() + "_VR_RTT_Left_tex";
 		vOff = openvrDevice->viewMatrixLeft();
 		pOff = openvrDevice->projectionOffsetMatrixLeft();
+		_textureTargets[texName] = texture;
 	} else {
 		cameraRTT->setName(parentCamera->getName() + "_VR_RTT_Right");
+		texName = parentCamera->getName() + "_VR_RTT_Right_tex";
 		vOff = openvrDevice->viewMatrixRight();
 		pOff = openvrDevice->projectionOffsetMatrixRight();
+		_textureTargets[texName] = texture;
 	}
 
-	// Specific OpenVR stuff -- MOVED TO FGRenderer::buildVRBuffers
+	// Specific OpenVR stuff -- MOVED TO FGRenderer::update()
 	// cameraRTT->setInitialDrawCallback(new OpenVRInitialDrawCallback());
 	// cameraRTT->setPreDrawCallback(new OpenVRPreDrawCallback(cameraRTT, buffer));
 	// cameraRTT->setFinalDrawCallback(new OpenVRPostDrawCallback(cameraRTT, buffer));
@@ -1224,7 +1242,7 @@ CameraInfo* CameraGroup::buildVRRTTCamera(SGPropertyNode* parentCameraNode,
 			OpenVRUpdateSlaveCallback::CameraType::RIGHT_CAMERA);
 		info->name = parentCamera->getName() + "_VR_RTT_Right";
 	}	
-	
+
 	info->physicalWidth = physicalWidth;
 	info->physicalHeight = physicalHeight;
 	info->bezelHeightTop = 0.;
