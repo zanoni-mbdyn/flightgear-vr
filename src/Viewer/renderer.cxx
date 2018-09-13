@@ -1686,7 +1686,10 @@ void FGRenderer::buildVRBuffers()
 	{
 		CameraInfo* info = i->get();
 		if (info->name == "VRC") {
-			info->getCamera(MAIN_CAMERA)->setGraphicsContext(nullptr);
+			osg::Camera* camera = info->getCamera(DISPLAY_CAMERA);
+			if (camera) {
+				camera->setGraphicsContext(nullptr);
+			}
 		}
 
 	}
