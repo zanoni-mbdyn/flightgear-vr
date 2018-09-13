@@ -283,7 +283,7 @@ using std::string;
         void unlisten(const std::string& name)
         {
             _viewportNode->getChild(name)->removeChangeListener(this);
-        }
+}
         
         SGPropertyNode_ptr _viewportNode;
         CameraInfo* _camera;
@@ -317,7 +317,7 @@ void CameraInfo::updateCameras()
         osg::Texture2D* texture = ii->second.texture.get();
         if ( texture->getTextureHeight() != height*f || texture->getTextureWidth() != width*f ) {
             texture->setTextureSize( width*f, height*f );
-            texture->dirtyTextureObject();
+            texture->dirtyTextureObject
         }
     }
 }
@@ -1188,6 +1188,9 @@ CameraInfo* CameraGroup::buildVRRTTCamera(Camera* parentCamera,
 	uint32_t renderWidth;
 	uint32_t renderHeight;
 	openvrDevice->getRTTCameraViewportDims(renderWidth, renderHeight);
+	const SGPropertyNode* viewportNode = cameraNode->getNode("viewport", true);
+	double physicalWidth = viewportNode->getDoubleValue("width", renderWidth);
+	double physicalHeight = viewportNode->getDoubleValue("height", renderHeight);
 	cameraRTT->setGraphicsContext(gc);
 
 	osg::Matrix vOff;
@@ -1221,8 +1224,8 @@ CameraInfo* CameraGroup::buildVRRTTCamera(Camera* parentCamera,
 		info->name = parentCamera->getName() + "_VR_RTT_Right";
 	}	
 	
-	info->physicalWidth = renderWidth;
-	info->physicalHeight = renderHeight;
+	info->physicalWidth = physicalWidth;
+	info->physicalHeight = physicalHeight;
 	info->bezelHeightTop = 0.;
 	info->bezelHeightBottom = 0.;
 	info->bezelWidthLeft = 0.;
@@ -1236,6 +1239,7 @@ CameraInfo* CameraGroup::buildVRRTTCamera(Camera* parentCamera,
 	}
 	double tmp = 
 	info->relativeCameraParent = parentCameraIndex;
+	info->ViewPortListener = CameraViewportListener(info, viewportNode, gc->getTraits());
 	info->updateCameras();
 
 	return info;
