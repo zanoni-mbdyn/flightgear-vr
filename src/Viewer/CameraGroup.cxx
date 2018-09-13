@@ -1232,12 +1232,12 @@ CameraInfo* CameraGroup::buildVRRTTCamera(SGPropertyNode* parentCameraNode,
 	// FG stuff
 	CameraInfo* info;
 	if (eye == OpenVRDevice::LEFT) {
-		CameraInfo* info = globals->get_renderer()->buildVRRenderingPipeline(this, 
+		info = globals->get_renderer()->buildVRRenderingPipeline(this, 
 			DO_INTERSECTION_TEST, cameraRTT, vOff, pOff, gc, false, 
 			OpenVRUpdateSlaveCallback::CameraType::LEFT_CAMERA);
 		info->name = parentCamera->getName() + "_VR_RTT_Left";
 	} else {
-		CameraInfo* info = globals->get_renderer()->buildVRRenderingPipeline(this, 
+		info = globals->get_renderer()->buildVRRenderingPipeline(this, 
 			DO_INTERSECTION_TEST, cameraRTT, vOff, pOff, gc, false,
 			OpenVRUpdateSlaveCallback::CameraType::RIGHT_CAMERA);
 		info->name = parentCamera->getName() + "_VR_RTT_Right";
