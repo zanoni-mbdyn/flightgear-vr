@@ -1250,6 +1250,7 @@ CameraInfo* CameraGroup::buildVRRTTCamera(SGPropertyNode* parentCameraNode,
 	info->bezelWidthLeft = 0.;
 	info->bezelWidthRight = 0.;
 	unsigned parentCameraIndex = ~0u;
+	/*
 	for (unsigned i = 0; i < _cameras.size(); ++i) {
 		if ( _cameras[i]->name != parentCamera->getName() ) {
 			continue;
@@ -1257,6 +1258,7 @@ CameraInfo* CameraGroup::buildVRRTTCamera(SGPropertyNode* parentCameraNode,
 		parentCameraIndex = i;
 	}
 	double tmp = 
+	*/
 	info->relativeCameraParent = parentCameraIndex;
 	info->viewportListener = new CameraViewportListener(info, viewportNode, gc->getTraits());
 	info->updateCameras();
