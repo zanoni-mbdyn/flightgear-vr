@@ -1211,7 +1211,9 @@ FGRenderer::buildDeferredFullscreenCamera( flightgear::CameraInfo* info, const F
 
 #ifdef HAVE_OPENVR
 void FGRenderer::setupVR(void)
-{ 
+{
+    osg::GraphicsContext* gc;
+
     // Attach a callback to detect swap
     osg::ref_ptr<OpenVRSwapCallback> swapCallback = new OpenVRSwapCallback(_openvrDevice);
 
@@ -1221,93 +1223,37 @@ void FGRenderer::setupVR(void)
 	  ++i )
 	{
 		CameraInfo* info = i->get();
-		for (CameraMap::iterator ii = info->cameras.begin();
-				ii != info->cameras.end(); 
-				++ii)
-		{
-			RenderStageInfo& rsi = ii->second;
-			
-			if (rsi.camera->getName() != "GUICamera") 
-			{
-				SG_LOG(SG_GENERAL, SG_INFO, "setupVR(): working on camera " << rsi.camera->getName());
-				rsi.camera->getGraphicsContext()->setSwapCallback(swapCallback);
-				setupVRCamera(rsi.camera, 
-						rsi.camera->getGraphicsContext(),
-						swapCallback);
-				SG_LOG(SG_GENERAL, SG_INFO, "setupVR(): done preparing camera " << rsi.camera->getName());
+
+		if (info->name == "VRC") {
+			osg::ref_ptr<osg::Camera> camera = nullptr;
+			camera = info->getCAmera(FAR_CAMERA);
+			if (camera.valid() && camera->getNodeMask()) {
+				setupVRCamera(camera, camera->getGraphicsContext(), swapCallback);
+				camera->setGraphicsContext(nullptr);
+			}
+
+			camera = info->getCamera(GEOMETRY_CAMERA)
+			if (camera) {
+				setupVRCamera(camera, camera->getGraphicsContext(), swapCallback);
+				camera->setGraphicsContext(nullptr);
+			}
+
+			camera = info->getCamera(LIGHTING_CAMERA);
+			if (camera) {
+				osg::Switch* sw = caemra->getChild(0)->asSwitch();
+				for (unsigned int i = 0; i < sw->getNumChildren(); ++i) {
+					osg::Camera* lc = dynamic_cast<osg::Camera*>(sw->getChild(i));
+					if (lc) {
+						std::string name = lc->getName();
+						if (name == "LightCamera") {
+							setupVRCamera(lc, lc->getGraphicsContext(), swapCallback);
+							lc->setGraphicsContext(nullptr);
+						}
+					}
+				}
 			}
 		}
-		
 	}
-    /*
-    for ( CameraGroup::CameraIterator ii = CameraGroup::getDefault()->camerasBegin();
-	  ii != CameraGroup::getDefault()->camerasEnd();
-	  ++ii )
-	{
-	    osg::GraphicsContext* gc;
-	    CameraInfo* info = ii->get();
-	    osg::Camera* camera = nullptr;
-	    if ( (camera = info->getCamera(MAIN_CAMERA)) ) {
-		gc = camera->getGraphicsContext();
-		if (!gc) { 
-		    SG_LOG(SG_GENERAL, SG_WARN, "setupVR: Unable to find a valid GraphicsContext for MAIN_CAMERA. Aborting...\n");
-		    std::cerr << "setupVR(): Unable to find a valid GraphicsContext for MAIN_CAMERA. Aborting..." << std::endl;
-		} else {
-		    std::cout << "setupVR(): Setting up MAIN_CAMERA for VR" << std::endl;
-		    gc->setSwapCallback(swapCallback);
-		    setupVRCamera(camera, gc, swapCallback);
-		    std::cout << "Finished setting up MAIN_CAMERA." << std::endl;
-		}
-	    } else if ( (camera = info->getCamera(FAR_CAMERA)) ) {
-		gc = camera->getGraphicsContext();
-		if (!gc) { 
-		    SG_LOG(SG_GENERAL, SG_WARN, "setupVR: Unable to find a valid GraphicsContext for FAR_CAMERA. Aborting...\n");
-		    std::cerr << "setupVR: Unable to find a valid GraphicsContext for FAR_CAMERA. Aborting...\n " << std::endl;
-		} else {
-		    std::cout << "setupVR(): Setting up FAR_CAMERA for VR" << std::endl;
-		    gc->setSwapCallback(swapCallback);
-		    setupVRCamera(camera, gc, swapCallback);
-		    std::cout << "Finished setting up FAR_CAMERA." << std::endl;
-		}
-	    } else if ( (camera = info->getCamera(GEOMETRY_CAMERA)) ) {
-		gc = camera->getGraphicsContext();
-		if (!gc) { 
-		    SG_LOG(SG_GENERAL, SG_WARN, "setupVR: Unable to find a valid GraphicsContext for GEOMETRY_CAMERA. Aborting...\n");
-		    std::cerr << "setupVR: Unable to find a valid GraphicsContext for GEOMETRY_CAMERA. Aborting...\n " << std::endl;
-		} else {
-		    std::cout << "setupVR(): Setting up GEOMETRY_CAMERA for VR" << std::endl;
-		    gc->setSwapCallback(swapCallback);
-		    setupVRCamera(camera, gc, swapCallback);
-		    std::cout << "Finished setting up GEOMETRY_CAMERA." << std::endl;
-		}
-	    } else if ( (camera = info->getCamera(SHADOW_CAMERA)) ) {
-		gc = camera->getGraphicsContext();
-		if (!gc) { 
-		    SG_LOG(SG_GENERAL, SG_WARN, "setupVR: Unable to find a valid GraphicsContext for SHADOW_CAMERA. Aborting...\n");
-		    std::cerr << "setupVR: Unable to find a valid GraphicsContext for SHADOW_CAMERA. Aborting...\n " << std::endl;
-		} else {
-		    std::cout << "setupVR(): Setting up SHADOW_CAMERA for VR" << std::endl;
-		    gc->setSwapCallback(swapCallback);
-		    setupVRCamera(camera, gc, swapCallback);
-		    std::cout << "Finished setting up SHADOW_CAMERA." << std::endl;
-
-		}
-	    } else if ( (camera = info->getCamera(LIGHTING_CAMERA)) ) {
-		gc = camera->getGraphicsContext();
-		if (!gc) { 
-		    SG_LOG(SG_GENERAL, SG_WARN, "setupVR: Unable to find a valid GraphicsContext for LIGHTING_CAMERA. Aborting...\n");
-		    std::cerr << "setupVR: Unable to find a valid GraphicsContext for LIGHTING_CAMERA. Aborting...\n " << std::endl;
-		} else {
-		    std::cout << "setupVR(): Setting up LIGHTING_CAMERA for VR" << std::endl;
-		    gc->setSwapCallback(swapCallback);
-		    setupVRCamera(camera, gc, swapCallback);
-		    std::cout << "Finished setting up LIGHTING_CAMERA." << std::endl;
-		}
-	    } else {
-		continue;
-	    }
-	}
-	*/
 }
 
 void FGRenderer::setupVRCamera(osg::Camera* camera, 
